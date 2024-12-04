@@ -9,8 +9,7 @@ pygame.init()
 # Configurações da tela
 pygame.display.set_caption("Snake Game")  # display do nome do jogo
 width, height = 900, 600  # tamanho da tela
-# tamanho da tela / variavel global
-screen = pygame.display.set_mode((width, height))
+screen = pygame.display.set_mode((width, height)) # tamanho da tela / variavel global
 clock = pygame.time.Clock()  # relogio do jogo / variavel global
 
 # Cores RGB com os parametros ja estipulados por regras de cores
@@ -22,6 +21,35 @@ red = (255, 0, 0)
 # parametros da cobra
 square_size = 20  # tamanho de cada quadrado
 snake_speed = 15  # velocidade da cobra a cada iteracao do loop
+
+# Variável para rastrear o estado do jogo
+game_state = "menu"  # Estados possíveis: "menu", "jogo"
+
+# Função para desenhar o menu
+def show_menu():
+    screen.fill(black)
+    font = pygame.font.SysFont("Pristina", 35)
+    title = font.render("Bem-vindo ao Snake Game!", True, white)
+    start_text = font.render("Pressione [Enter] para jogar", True, green)
+    quit_text = font.render("Pressione [Esc] para sair", True, red)
+
+    # Exibir textos na tela do menu
+    screen.blit(title, (width // 2 - title.get_width() // 2, height // 3))
+    screen.blit(start_text, (width // 2 - start_text.get_width() // 2, height // 2))
+    screen.blit(quit_text, (width // 2 - quit_text.get_width() // 2, height // 2 + 60))
+    pygame.display.update()
+  
+# Função para pausar o jogo
+def show_pause():
+    global game_state
+
+    font = pygame.font.SysFont("Pristina", 60)
+    pause_text = font.render("Jogo em pausa. Pressione [Space] para continuar", True, white)
+
+    screen.fill(black)
+    screen.blit(pause_text, (width // 2 - pause_text.get_width() // 2, height // 2))
+    pygame.display.update()
+
 
 # funcao para gerar comida
 def food_generator(): # gera o quadrado da comida dentro da tela e alinhado com os movimentos da cobra
@@ -57,7 +85,6 @@ def snake_direction(key):
         snake_speed_x = -square_size
         snake_speed_y = 0       
     return snake_speed_x, snake_speed_y
-        
 
 # funcao principal do jogo
 def run_game():
@@ -83,6 +110,23 @@ def run_game():
                 end_game = True
             elif event.type == pygame.KEYDOWN:
                 snake_speed_x, snake_speed_y = snake_direction(event.key)
+                
+            elif event.type == pygame.KEYDOWN:
+                # Verificar teclas de movimento válidas
+                if event.key == pygame.K_DOWN:
+                    snake_speed_x, snake_speed_y = 0, square_size
+                elif event.key == pygame.K_UP:
+                    snake_speed_x, snake_speed_y = 0, -square_size
+                elif event.key == pygame.K_RIGHT:
+                    snake_speed_x, snake_speed_y = square_size, 0
+                elif event.key == pygame.K_LEFT:
+                    snake_speed_x, snake_speed_y = -square_size, 0
+                elif event.key == pygame.K_ESCAPE:  # ESC retorna ao menu
+                    game_state = "menu"
+                    return
+                elif event.key == pygame.K_SPACE:  # SPACE pausa o jogo
+                    game_state = "pause"
+                
         
         #atualizar a posicao da cobra
         snake_x += snake_speed_x
@@ -119,7 +163,7 @@ def run_game():
         # desenhar cobra
         drawing_snake(square_size, pixels)
         # atualizar pontuacao
-        score(snake_size - 1)
+        #score(snake_size - 1)
 
         # atualizar tela
         pygame.display.update()     
@@ -127,5 +171,37 @@ def run_game():
         
     pygame.quit()
     sys.exit()
+    
+def show_pause():
+    global game_state
 
-run_game()
+    font = pygame.font.SysFont("Pristina", 60)
+    pause_text = font.render("Jogo Pausado. Pressione [Space] para continuar", True, white)
+
+    screen.fill(black)
+    screen.blit(pause_text, (width // 2 - pause_text.get_width() // 2, height // 2))
+    pygame.display.update()
+# CICLO DO MENU IMCOMPLETO    
+while True:
+    if game_state == "menu":
+        # Exibir o menu
+        show_menu()
+
+        # Eventos para o menu
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+            elif event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_RETURN:  # Enter inicia o jogo
+                    game_state = "jogo"
+                elif event.key == pygame.K_ESCAPE:  # Esc fecha o jogo
+                    pygame.quit()
+                    sys.exit()
+
+    elif game_state == "jogo":
+        run_game()
+        # Quando o jogo terminar, retorna para o menu
+        game_state = "menu"
+
+
