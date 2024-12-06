@@ -2,7 +2,10 @@ import pygame
 import random
 import sys
 import json
+import os
 
+
+# PARAMETROS INICIAIS DO JOGO
 # Inicializa o Pygame
 pygame.init()
 
@@ -18,6 +21,7 @@ black = (0, 0, 0)
 white = (255, 255, 255)
 green = (0, 255, 0)
 red = (255, 0, 0)
+aqua = (0, 255, 255)
 
 # parametros da cobra
 square_size = 20  # tamanho de cada quadrado
@@ -26,30 +30,280 @@ snake_speed = 15  # velocidade da cobra a cada iteracao do loop
 # Variável para rastrear o estado do jogo
 game_state = "menu"  # Estados possíveis: "menu", "jogo"
 
-# Função para desenhar o menu
-def show_menu():
-    screen.fill(black)
-    font = pygame.font.SysFont("Pristina", 35)
-    title = font.render("Bem-vindo ao Snake Game!", True, white)
-    start_text = font.render("Pressione [Enter] para jogar", True, green)
-    quit_text = font.render("Pressione [Esc] para sair", True, red)
 
-    # Exibir textos na tela do menu
-    screen.blit(title, (width // 2 - title.get_width() // 2, height // 3))
-    screen.blit(start_text, (width // 2 -
-                start_text.get_width() // 2, height // 2))
-    screen.blit(quit_text, (width // 2 -
-                quit_text.get_width() // 2, height // 2 + 60))
-    pygame.display.update()
+# MANIPULACAO DE FICHEIROS JSON
+JSON_FILE = "users_and_scores.json"
+
+if not os.path.exists(JSON_FILE):
+    with open(JSON_FILE, "w") as file:
+        json.dump({"users": {}, "unknown": []}, file)
+
+# Funcao que carrega os dados do ficheiro JSON
+def load_data():
+    with open(JSON_FILE, "r") as file:
+        return json.load(file)
+
+data = load_data()
+users = data["users"]
+
+# Funcao que salva os dados no ficheiro JSON
+def save_data(data):
+    """Guarda os dados no ficheiro JSON."""
+    with open(JSON_FILE, "w") as file:
+        json.dump(data, file, indent=4)
+        
+# Lista de utilizadores registrados
+users = []
+
+# Função para adicionar um utilizador
+def add_user(user_name):
+    """Adiciona um utilizador à lista."""
+    if user_name and user_name not in users:
+        users.append(user_name)
+        data = load_data()
+        data["users"] = users
+        save_data(data)  # Salva as alterações no arquivo JSON
+
+# Função para remover um utilizador
+def remove_user(user_name):
+    """Remove um utilizador da lista."""
+    if user_name in users:
+        users.remove(user_name)
+        data = load_data()
+        data["users"] = users
+        save_data(data)  # Salva as alterações no arquivo JSON
+
+
+# GESTAO DE UTILIZADORES E FUNCOES DO MENU
+# Função para gerir utilizadores
+def manage_users():
+    """Gestão de utilizadores: adicionar ou remover."""
+    font = pygame.font.SysFont("Pristina", 30)
+    user_input = ""
+    selected_index = 0  # Índice da seleção na lista de utilizadores
+    action = "input"  # Estado atual: "input", "list", ou "confirm"
+    confirm_selection = 0  # Seleção no menu de confirmação (0 = Sim, 1 = Não)
+    screen.fill(black)
+
+    while True:
+        screen.fill(black)
+
+        # Título do menu
+        title_text = font.render("Gerir Utilizadores", True, aqua)
+        screen.blit(title_text, (width // 2 - title_text.get_width() // 2, height // 4))
+
+        if action == "input":
+            # Exibir prompt para digitar o nome
+            prompt = font.render("Digite o nome de utilizador:", True, white)
+            screen.blit(prompt, (width // 2 - prompt.get_width() // 2, height // 2 - 50))
+            user_display = font.render(user_input, True, green)
+            screen.blit(user_display, (width // 2 - user_display.get_width() // 2, height // 2))
+        elif action == "list":
+            # Exibir a lista de utilizadores
+            users_list_font = pygame.font.SysFont("Pristina", 25)
+            y_offset = height // 2 - 50
+            for idx, user in enumerate(users):
+                color = green if idx == selected_index else white
+                user_text = users_list_font.render(user, True, color)
+                screen.blit(user_text, (width // 2 - 150, y_offset + idx * 30))
+
+                # Botão "Apagar"
+                delete_color = red if idx == selected_index else white
+                delete_text = users_list_font.render("Apagar", True, delete_color)
+                screen.blit(delete_text, (width // 2 + 100, y_offset + idx * 30))
+        elif action == "confirm":
+            # Confirmação para apagar utilizador
+            confirm_font = pygame.font.SysFont("Pristina", 28)
+            confirm_prompt = confirm_font.render(
+                f"Tem certeza que deseja apagar {users[selected_index]}?", True, white
+            )
+            screen.blit(confirm_prompt, (width // 2 - confirm_prompt.get_width() // 2, height // 2 - 50))
+
+            # Opções de confirmação
+            options = ["Sim", "Não"]
+            for idx, option in enumerate(options):
+                color = green if idx == confirm_selection else white
+                option_text = confirm_font.render(option, True, color)
+                x_pos = width // 2 - 50 + idx * 100
+                screen.blit(option_text, (x_pos, height // 2 + 30))
+
+        # Instruções na parte inferior
+        instructions = font.render("Setas: Navegar | Enter: Selecionar | Esc: Voltar", True, white)
+        screen.blit(instructions, (width // 2 - instructions.get_width() // 2, height - 50))
+
+        pygame.display.update()
+
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+            elif event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_ESCAPE:  # Voltar ao menu principal
+                    if action == "confirm":
+                        action = "list"  # Voltar para a lista sem apagar
+                    else:
+                        return
+                elif action == "input":
+                    if event.key == pygame.K_RETURN:  # Adicionar utilizador
+                        if user_input:
+                            add_user(user_input)
+                            user_input = ""  # Limpar o campo de entrada
+                        action = "list"  # Mudar para o modo de lista
+                    elif event.key == pygame.K_BACKSPACE:
+                        user_input = user_input[:-1]
+                    else:
+                        user_input += event.unicode
+                elif action == "list":
+                    if event.key == pygame.K_UP:  # Navegar para cima
+                        selected_index = (selected_index - 1) % len(users)
+                    elif event.key == pygame.K_DOWN:  # Navegar para baixo
+                        selected_index = (selected_index + 1) % len(users)
+                    elif event.key == pygame.K_RETURN:  # Selecionar apagar
+                        if users:  # Certificar que há utilizadores na lista
+                            action = "confirm"  # Mudar para o estado de confirmação
+                            confirm_selection = 0  # Selecionar "Sim" por padrão
+                    elif event.key == pygame.K_a:  # Voltar para adicionar um utilizador
+                        action = "input"
+                elif action == "confirm":
+                    if event.key == pygame.K_LEFT:  # Navegar para "Sim"
+                        confirm_selection = (confirm_selection - 1) % 2
+                    elif event.key == pygame.K_RIGHT:  # Navegar para "Não"
+                        confirm_selection = (confirm_selection + 1) % 2
+                    elif event.key == pygame.K_RETURN:
+                        if confirm_selection == 0:  # "Sim" selecionado
+                            remove_user(users[selected_index])
+                            action = "list"  # Voltar para a lista após apagar
+                            selected_index = min(selected_index, len(users) - 1)  # Ajustar índice
+                        else:  # "Não" selecionado
+                            action = "list"  # Voltar para a lista sem apagar
+                             
+
+#MENU PRINCIPAL                        
+# Função para desenhar o menu principal
+def show_menu():
+    """Exibe o menu principal com navegação por setas e seleção."""
+    screen.fill(black)
+
+    # Configurações das fontes
+    title_font = pygame.font.SysFont("Pristina", 50)  # Fonte maior para o título
+    option_font = pygame.font.SysFont("Pristina", 30)  # Fonte menor para as opções
+
+    # Título do menu
+    title_text = title_font.render("Bem-vindo ao Snake Game!", True, aqua)
+    screen.blit(title_text, (width // 2 - title_text.get_width() // 2, height // 4))
+
+    # Opções do menu
+    menu_options = [
+        "Jogar",
+        "Gerir utilizadores",
+        "Ver pontuações",
+        "Sair",
+    ]
+
+    # Espaçamento vertical entre as opções
+    spacing = 40
+    start_y = height // 4 + 80  
+
+    selected_index = 0  # Índice da opção selecionada
+
+    while True:
+        screen.fill(black)
+        screen.blit(title_text, (width // 2 - title_text.get_width() // 2, height // 4))
+
+        # Desenho das opções
+        for i, option in enumerate(menu_options):
+            # Cor diferente para a opção selecionada
+            color = green if i == selected_index else white
+            option_text = option_font.render(option, True, color)
+            screen.blit(option_text, (width // 2 - option_text.get_width() // 2, start_y + i * spacing))
+
+        pygame.display.update()
+
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+            elif event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_UP:  # Navegar para cima
+                    selected_index = (selected_index - 1) % len(menu_options)
+                elif event.key == pygame.K_DOWN:  # Navegar para baixo
+                    selected_index = (selected_index + 1) % len(menu_options)
+                elif event.key == pygame.K_RETURN:  # Selecionar opção
+                    if selected_index == 0:  # Jogar
+                        return "play"
+                    elif selected_index == 1:  # Gerir utilizadores
+                        return "manage_users"
+                    elif selected_index == 2:  # ver pontuações
+                        return "clear_scores"
+                    elif selected_index == 3:  # Sair
+                        pygame.quit()
+                        sys.exit()
+                elif event.key == pygame.K_ESCAPE:  # Sair do menu
+                    pygame.quit()
+                    sys.exit()
+
+
+# FUNCOES RELACIONADAS COM AS INTERACOES DOS MENUS
+# Funcao para selecionar um utilizador
+def select_user():
+    """Permite ao jogador escolher um utilizador ou entrar como 'unknown'."""
+    data = load_data()
+    users = data["users"]
+    
+    font = pygame.font.SysFont("Pristina", 30)
+    selected_index = 0  # Índice do utilizador selecionado
+
+    while True:
+        screen.fill(black)
+
+        # Título
+        title_text = font.render("Selecione um Utilizador", True, aqua)
+        screen.blit(title_text, (width // 2 - title_text.get_width() // 2, height // 4))
+
+        if users:
+            # Exibe a lista de utilizadores
+            y_offset = height // 2 - 50
+            for idx, user in enumerate(users):
+                color = green if idx == selected_index else white
+                user_text = font.render(user, True, color)
+                screen.blit(user_text, (width // 2 - user_text.get_width() // 2, y_offset + idx * 40))
+
+            # Botão para "Selecionar"
+            select_text = font.render("Pressione Enter para selecionar", True, green)
+            screen.blit(select_text, (width // 2 - select_text.get_width() // 2, height - 80))
+        else:
+            # Se não houver utilizadores, exibe 'Unknown'
+            unknown_text = font.render("Nenhum utilizador registrado. Entrando como Unknown.", True, red)
+            screen.blit(unknown_text, (width // 2 - unknown_text.get_width() // 2, height // 2))
+
+        pygame.display.update()
+
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+            elif event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_UP:  # Navegar para cima
+                    selected_index = (selected_index - 1) % len(users)
+                elif event.key == pygame.K_DOWN:  # Navegar para baixo
+                    selected_index = (selected_index + 1) % len(users)
+                elif event.key == pygame.K_RETURN:  # Selecionar utilizador
+                    if users:
+                        selected_user = users[selected_index]
+                    else:
+                        selected_user = "Unknown"  # Se não houver utilizadores, usa "Unknown"
+                    return selected_user
+                elif event.key == pygame.K_ESCAPE:  # Voltar ao menu
+                    return None
 
 # Funcao para pausar o jogo
 def pause_game():
     paused = True
-    font = pygame.font.SysFont("Pristina", 35)
+    font = pygame.font.SysFont("Pristina", 30)
     pause_text = font.render("Jogo Pausado - Pressione [Espaço] para continuar", True, white)
 
     while paused:
-        screen.blit(pause_text, (width // 2 - pause_text.get_width() // 2, height // 2))
+        screen.blit(pause_text, (width // 2 - pause_text.get_width() // 2, height // 2)) # para ficar centrado na tela
         pygame.display.update()
 
         for event in pygame.event.get():
@@ -59,7 +313,52 @@ def pause_game():
             elif event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_SPACE:  # Despausar o jogo
                     paused = False
+                    
+def game_over_message(message):
+    """Exibe uma mensagem de Game Over e espera interação."""
+    font = pygame.font.SysFont("Pristina", 50)
+    screen.fill(black)
+    game_over_text = font.render(message, True, red)
+    prompt_text = font.render("Pressione [Enter] para voltar ao menu", True, white)
+    screen.blit(game_over_text, (width // 2 - game_over_text.get_width() // 2, height // 2 - 50))
+    screen.blit(prompt_text, (width // 2 - prompt_text.get_width() // 2, height // 2 + 20))
+    pygame.display.update()
 
+    while True:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+            elif event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_RETURN:
+                    return  # Voltar ao menu
+                
+def display_username(username):
+    """Exibe o nome do utilizador no canto superior direito."""
+    font = pygame.font.SysFont("Pristina", 30)
+
+    # Texto "Jogador:" em branco
+    text_player = font.render("Jogador:", True, white)
+    # Nome do jogador em verde
+    text_username = font.render(username, True, green)
+    # Calculando a posição para exibir o texto no canto superior direito
+    padding = 10  # Distância da borda direita
+    # Posição do "Jogador:" (a partir da borda direita)
+    player_x = width - padding - text_player.get_width() - text_username.get_width() - 10  # Subtraímos a largura do nome do usuário e algum espaço
+    # Posição do nome do jogador
+    username_x = width - padding - text_username.get_width()
+    # Exibindo "Jogador:" e o nome do jogador na tela
+    screen.blit(text_player, (player_x, 3))  # "Jogador:" posicionado à direita
+    screen.blit(text_username, (username_x, 3))  # Nome do usuário posicionado à direita de "Jogador:"
+
+# funcao para contabilizar a pontuacao no ecra de jogo
+def score(pontuacao):
+    font = pygame.font.SysFont("Pristina", 30)
+    text = font.render("Pontuação: " + str(pontuacao), True, white)
+    screen.blit(text, [3, 3])
+
+
+# PARAMETROS DA COBRA E DA COMIDA
 # funcao para gerar comida
 def food_generator(): # gera o quadrado da comida dentro da tela e alinhado com os movimentos da cobra
     food_x = round(random.randrange(0, width - square_size) / 20.0) * 20.0
@@ -75,15 +374,7 @@ def drawing_snake(size, pixels):
     for pixel in pixels:
         pygame.draw.rect(screen, green, [pixel[0], pixel[1], size, size])
 
-# funcao para contabilizar a pontuacao no ecra de jogo
-def score(pontuacao):
-    font = pygame.font.SysFont("Pristina", 30)
-    text = font.render("Pontuação: " + str(pontuacao), True, white)
-    screen.blit(text, [3, 3])
-
 # funcao para direcionar a cobra no jogo
-
-
 def snake_direction(key):
     if key == pygame.K_DOWN:
         snake_speed_x = 0
@@ -99,14 +390,16 @@ def snake_direction(key):
         snake_speed_y = 0
     return snake_speed_x, snake_speed_y
 
+
+# CONSTRUCAO DO JOGO / COMPONENTES DO JOGO
 # funcao principal do jogo
-
-
 def run_game():
     end_game = False  # declaracao da variavel booleana para o loop
-
-    snake_x = width / 2
-    snake_y = height / 2
+    
+    #garante que as posições iniciais da cobra estejam alinhadas aos múltiplos de square_size
+    snake_x = round((width / 2) / square_size) * square_size 
+    #garante que as posições iniciais da cobra estejam alinhadas aos múltiplos de square_size
+    snake_y = round((height / 2) / square_size) * square_size 
 
     snake_speed_x = 0
     snake_speed_y = 0
@@ -117,20 +410,18 @@ def run_game():
     food_x, food_y = food_generator()
 
     while not end_game:
-
-        screen.fill(black)  # limpa a tela no inicio de cada iteracao do loop
-
+        screen.fill(black)
         for event in pygame.event.get():
-            if event.type == pygame.QUIT:  # Fechar janela
-                end_game = True
-            elif event.type == pygame.KEYDOWN:  # Processar teclas pressionadas
-                if event.key == pygame.K_SPACE:  # Pausar o jogo
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+            elif event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_ESCAPE:  # Retornar ao menu
+                    return
+                elif event.key == pygame.K_SPACE:  # Pausar o jogo
                     pause_game()
                 elif event.key in (pygame.K_DOWN, pygame.K_UP, pygame.K_RIGHT, pygame.K_LEFT):
-                    snake_speed_x, snake_speed_y = snake_direction(event.key)
-                elif event.key == pygame.K_ESCAPE:  # ESC retorna ao menu
-                    game_state = "menu"
-                    return
+                    snake_speed_x, snake_speed_y = snake_direction(event.key)                  
 
         # atualizar a posicao da cobra
         snake_x += snake_speed_x
@@ -160,14 +451,17 @@ def run_game():
         # verifica se a cobra colidiu com ela mesma
         for pixel in pixels[:-1]:  # tirar o ultimo pixel da lista / a cabeca da cobra
             if pixel == [snake_x, snake_y]:
-                end_game = True
+                game_over_message("GAME OVER !")
+                return
 
         # desenhar comida
         drawing_food(square_size, food_x, food_y)
         # desenhar cobra
         drawing_snake(square_size, pixels)
-        # atualizar pontuacao
+        # atualiza a pontuacao
         score(snake_size - 1)
+        
+        display_username("NomeDoJogador")
 
         # atualizar tela
         pygame.display.update()
@@ -175,24 +469,24 @@ def run_game():
 
     pygame.quit()
     sys.exit()
-    
+
+if game_state == "menu":
+    show_menu()  # Exibe o menu uma vez   
 # Loop do menu principal do jogo
 while True:
     if game_state == "menu":
-        # Exibir o menu
-        show_menu()
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                pygame.quit()
-                sys.exit()
-            elif event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_RETURN:  # Enter inicia o jogo
-                    game_state = "jogo"
-                elif event.key == pygame.K_ESCAPE:  # Esc fecha o jogo
-                    pygame.quit()
-                    sys.exit()
-
+        action = show_menu()  # Recebe a ação escolhida no menu
+        if action == "play":
+            game_state = "jogo"
+            current_user = None  # Joga como 'unknown'
+        elif action == "manage_users":
+            current_user = manage_users()
+        elif action == "quit":
+            pygame.quit()
+            sys.exit()
     elif game_state == "jogo":
         run_game()
         # Após terminar o jogo, voltar ao menu
-        game_state = "menu"     
+        game_over_message("GAME OVER !")
+        game_state = "menu"
+              
