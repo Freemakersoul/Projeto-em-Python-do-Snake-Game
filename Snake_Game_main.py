@@ -34,14 +34,20 @@ game_state = "menu"  # Estados possíveis: "menu", "jogo"
 # MANIPULACAO DE FICHEIROS JSON
 JSON_FILE = "users_and_scores.json"
 
-if not os.path.exists(JSON_FILE):
-    with open(JSON_FILE, "w") as file:
-        json.dump({"users": {}, "unknown": []}, file)
-
-# Funcao que carrega os dados do ficheiro JSON
+# Função para carregar dados JSON e garantir estrutura padrão
 def load_data():
-    with open(JSON_FILE, "r") as file:
-        return json.load(file)
+    """Carrega os dados do ficheiro JSON e garante estrutura padrão."""
+    if not os.path.exists(JSON_FILE):
+        # Inicializa o ficheiro JSON com uma estrutura padrão
+        with open(JSON_FILE, "w") as file:
+            json.dump({"users": []}, file, indent=4)
+
+    try:
+        with open(JSON_FILE, "r") as file:
+            return json.load(file)
+    except json.JSONDecodeError:
+        # Retorna uma estrutura padrão se o ficheiro estiver corrompido
+        return {"users": []}
 
 data = load_data()
 users = data["users"]
@@ -52,29 +58,37 @@ def save_data(data):
     with open(JSON_FILE, "w") as file:
         json.dump(data, file, indent=4)
         
-# Lista de utilizadores registrados
-users = []
+# # Lista de utilizadores registrados
+# users = []
 
 # Função para adicionar um utilizador
 def add_user(user_name):
     """Adiciona um utilizador à lista."""
-    if user_name and user_name not in users:
-        users.append(user_name)
-        data = load_data()
-        data["users"] = users
+    # if user_name and user_name not in users:
+    #     users.append(user_name)
+    data = load_data()
+    if user_name not in data["users"]:
+        data["users"].append(user_name)
         save_data(data)  # Salva as alterações no arquivo JSON
-
+    
+        
 # Função para remover um utilizador
 def remove_user(user_name):
     """Remove um utilizador da lista."""
+    data = load_data()
     if user_name in users:
         users.remove(user_name)
-        data = load_data()
-        data["users"] = users
+        data["users"].remove(user_name)
         save_data(data)  # Salva as alterações no arquivo JSON
+    data = load_data()
+    
+# Função para listar utilizadores
+def get_users():
+    """Obtém a lista de utilizadores do ficheiro JSON."""
+    data = load_data()
+    return data.get("users", [])
 
-
-# GESTAO DE UTILIZADORES E FUNCOES DO MENU
+# FUNCOES RELACIONADAS COM AS INTERACOES DOS MENUS
 # Função para gerir utilizadores
 def manage_users():
     """Gestão de utilizadores: adicionar ou remover."""
@@ -100,9 +114,11 @@ def manage_users():
             screen.blit(user_display, (width // 2 - user_display.get_width() // 2, height // 2))
         elif action == "list":
             # Exibir a lista de utilizadores
+            dataUpdate = load_data()
+            usersNew = data["users"]
             users_list_font = pygame.font.SysFont("Pristina", 25)
             y_offset = height // 2 - 50
-            for idx, user in enumerate(users):
+            for idx, user in enumerate(usersNew):
                 color = green if idx == selected_index else white
                 user_text = users_list_font.render(user, True, color)
                 screen.blit(user_text, (width // 2 - 150, y_offset + idx * 30))
@@ -176,7 +192,66 @@ def manage_users():
                             selected_index = min(selected_index, len(users) - 1)  # Ajustar índice
                         else:  # "Não" selecionado
                             action = "list"  # Voltar para a lista sem apagar
-                             
+ 
+def load_users_from_json(file_path="users_and_scores.json"):
+    """Carrega a lista de utilizadores de um ficheiro JSON."""
+    try:
+        with open(file_path, "r") as file:
+            data = json.load(file)
+            return data.get("users", ["unknown"])  # Retorna a lista de utilizadores ou ["Unknown"] por padrão
+    except FileNotFoundError:
+        return ["unknown"]  # Caso o ficheiro não exista, retorna apenas o utilizador padrão
+    except json.JSONDecodeError:
+        print("Erro ao decodificar o ficheiro JSON. Verifique o formato.")
+        return ["unknown"]
+
+
+def select_user():
+    """Exibe um submenu para selecionar o utilizador antes de começar o jogo."""
+    # Configurações iniciais
+    title_font = pygame.font.SysFont("Pristina", 40)
+    option_font = pygame.font.SysFont("Pristina", 30)
+
+    # Título do submenu
+    title_text = title_font.render("Selecione o utilizador:", True, aqua)
+
+    # Carregar utilizadores do ficheiro JSON
+    users = load_users_from_json()
+    if not users:  # Garantir que existe ao menos "unknown"
+        users = ["unknown"]
+
+    selected_index = 0  # Índice da opção selecionada
+
+    while True:
+        screen.fill(black)
+        screen.blit(title_text, (width // 2 - title_text.get_width() // 2, height // 4))
+
+        # Desenho das opções
+        spacing = 40
+        start_y = height // 4 + 80
+
+        for i, user in enumerate(users):
+            color = green if i == selected_index else white
+            user_text = option_font.render(user, True, color)
+            screen.blit(user_text, (width // 2 - user_text.get_width() // 2, start_y + i * spacing))
+
+        pygame.display.update()
+
+        # Gerenciar eventos
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+            elif event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_UP:  # Navegar para cima
+                    selected_index = (selected_index - 1) % len(users)
+                elif event.key == pygame.K_DOWN:  # Navegar para baixo
+                    selected_index = (selected_index + 1) % len(users)
+                elif event.key == pygame.K_RETURN:  # Selecionar utilizador
+                    return users[selected_index]
+                elif event.key == pygame.K_ESCAPE:  # Voltar ao menu principal
+                    return None
+                         
 
 #MENU PRINCIPAL                        
 # Função para desenhar o menu principal
@@ -230,71 +305,20 @@ def show_menu():
                     selected_index = (selected_index + 1) % len(menu_options)
                 elif event.key == pygame.K_RETURN:  # Selecionar opção
                     if selected_index == 0:  # Jogar
-                        return "play"
+                        selected_user = select_user()
+                        if selected_user:  # Verifica se um utilizador foi selecionado
+                            screen.fill(black)
+                            run_game(selected_user)
                     elif selected_index == 1:  # Gerir utilizadores
                         return "manage_users"
                     elif selected_index == 2:  # ver pontuações
-                        return "clear_scores"
+                        return "view_scores"
                     elif selected_index == 3:  # Sair
                         pygame.quit()
                         sys.exit()
                 elif event.key == pygame.K_ESCAPE:  # Sair do menu
                     pygame.quit()
                     sys.exit()
-
-
-# FUNCOES RELACIONADAS COM AS INTERACOES DOS MENUS
-# Funcao para selecionar um utilizador
-def select_user():
-    """Permite ao jogador escolher um utilizador ou entrar como 'unknown'."""
-    data = load_data()
-    users = data["users"]
-    
-    font = pygame.font.SysFont("Pristina", 30)
-    selected_index = 0  # Índice do utilizador selecionado
-
-    while True:
-        screen.fill(black)
-
-        # Título
-        title_text = font.render("Selecione um Utilizador", True, aqua)
-        screen.blit(title_text, (width // 2 - title_text.get_width() // 2, height // 4))
-
-        if users:
-            # Exibe a lista de utilizadores
-            y_offset = height // 2 - 50
-            for idx, user in enumerate(users):
-                color = green if idx == selected_index else white
-                user_text = font.render(user, True, color)
-                screen.blit(user_text, (width // 2 - user_text.get_width() // 2, y_offset + idx * 40))
-
-            # Botão para "Selecionar"
-            select_text = font.render("Pressione Enter para selecionar", True, green)
-            screen.blit(select_text, (width // 2 - select_text.get_width() // 2, height - 80))
-        else:
-            # Se não houver utilizadores, exibe 'Unknown'
-            unknown_text = font.render("Nenhum utilizador registrado. Entrando como Unknown.", True, red)
-            screen.blit(unknown_text, (width // 2 - unknown_text.get_width() // 2, height // 2))
-
-        pygame.display.update()
-
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                pygame.quit()
-                sys.exit()
-            elif event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_UP:  # Navegar para cima
-                    selected_index = (selected_index - 1) % len(users)
-                elif event.key == pygame.K_DOWN:  # Navegar para baixo
-                    selected_index = (selected_index + 1) % len(users)
-                elif event.key == pygame.K_RETURN:  # Selecionar utilizador
-                    if users:
-                        selected_user = users[selected_index]
-                    else:
-                        selected_user = "Unknown"  # Se não houver utilizadores, usa "Unknown"
-                    return selected_user
-                elif event.key == pygame.K_ESCAPE:  # Voltar ao menu
-                    return None
 
 # Funcao para pausar o jogo
 def pause_game():
@@ -303,7 +327,7 @@ def pause_game():
     pause_text = font.render("Jogo Pausado - Pressione [Espaço] para continuar", True, white)
 
     while paused:
-        screen.blit(pause_text, (width // 2 - pause_text.get_width() // 2, height // 2)) # para ficar centrado na tela
+        screen.blit(pause_text, (width // 2 - pause_text.get_width() // 2, height // 2)) # para ficar centrado a tela
         pygame.display.update()
 
         for event in pygame.event.get():
@@ -333,14 +357,14 @@ def game_over_message(message):
                 if event.key == pygame.K_RETURN:
                     return  # Voltar ao menu
                 
-def display_username(username):
+def display_username(selected_user):
     """Exibe o nome do utilizador no canto superior direito."""
     font = pygame.font.SysFont("Pristina", 30)
 
     # Texto "Jogador:" em branco
     text_player = font.render("Jogador:", True, white)
     # Nome do jogador em verde
-    text_username = font.render(username, True, green)
+    text_username = font.render(selected_user, True, green)
     # Calculando a posição para exibir o texto no canto superior direito
     padding = 10  # Distância da borda direita
     # Posição do "Jogador:" (a partir da borda direita)
@@ -393,7 +417,7 @@ def snake_direction(key):
 
 # CONSTRUCAO DO JOGO / COMPONENTES DO JOGO
 # funcao principal do jogo
-def run_game():
+def run_game(selected_user):
     end_game = False  # declaracao da variavel booleana para o loop
     
     #garante que as posições iniciais da cobra estejam alinhadas aos múltiplos de square_size
@@ -411,6 +435,7 @@ def run_game():
 
     while not end_game:
         screen.fill(black)
+        display_username(selected_user)  # Mostra o nome selecionado
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.quit()
@@ -460,8 +485,6 @@ def run_game():
         drawing_snake(square_size, pixels)
         # atualiza a pontuacao
         score(snake_size - 1)
-        
-        display_username("NomeDoJogador")
 
         # atualizar tela
         pygame.display.update()
@@ -470,6 +493,7 @@ def run_game():
     pygame.quit()
     sys.exit()
 
+    
 if game_state == "menu":
     show_menu()  # Exibe o menu uma vez   
 # Loop do menu principal do jogo
