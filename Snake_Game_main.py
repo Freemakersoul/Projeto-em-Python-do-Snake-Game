@@ -34,23 +34,18 @@ game_state = "menu"  # Estados possíveis: "menu", "jogo"
 # MANIPULACAO DE FICHEIROS JSON
 JSON_FILE = "users_and_scores.json"
 
-# Função para carregar dados JSON e garantir estrutura padrão
-def load_data():
-    """Carrega os dados do ficheiro JSON e garante estrutura padrão."""
-    if not os.path.exists(JSON_FILE):
-        # Inicializa o ficheiro JSON com uma estrutura padrão
-        with open(JSON_FILE, "w") as file:
-            json.dump({"users": []}, file, indent=4)
+if not os.path.exists(JSON_FILE):
+    with open(JSON_FILE, "w") as file:
+        json.dump({"users": {}, "unknown": []}, file)
 
-    try:
-        with open(JSON_FILE, "r") as file:
-            return json.load(file)
-    except json.JSONDecodeError:
-        # Retorna uma estrutura padrão se o ficheiro estiver corrompido
-        return {"users": []}
+# Funcao que carrega os dados do ficheiro JSON
+def load_data():
+    with open(JSON_FILE, "r") as file:
+        return json.load(file)
 
 data = load_data()
 users = data["users"]
+scores = data["scores"]
 
 # Funcao que salva os dados no ficheiro JSON
 def save_data(data):
@@ -58,48 +53,64 @@ def save_data(data):
     with open(JSON_FILE, "w") as file:
         json.dump(data, file, indent=4)
         
-# # Lista de utilizadores registrados
-# users = []
+def save_score(user, score):
+    """Adiciona uma nova pontuação ao arquivo JSON."""
+    try:
+        with open("users_and_scores.json", "r") as file:
+            data = json.load(file)
+    except FileNotFoundError:
+        data = {"users": [], "scores": []}
+
+    # Adicionar a pontuação
+    data["scores"].append({"user": user, "score": score})
+
+    # Garantir que o usuário está na lista de usuários
+    if user not in data["users"]:
+        data["users"].append(user)
+
+    # Salvar os dados de volta ao JSON
+    with open("users_and_scores.json", "w") as file:
+        json.dump(data, file, indent=4)
+        
+# Lista de utilizadores registrados
+
 
 # Função para adicionar um utilizador
 def add_user(user_name):
     """Adiciona um utilizador à lista."""
-    # if user_name and user_name not in users:
-    #     users.append(user_name)
-    data = load_data()
-    if user_name not in data["users"]:
-        data["users"].append(user_name)
-        save_data(data)  # Salva as alterações no arquivo JSON
-    
-        
+    if user_name:
+        data = load_data()
+        if user_name not in data["users"]:
+            data["users"].append(user_name)
+        save_data(data)
+
 # Função para remover um utilizador
 def remove_user(user_name):
     """Remove um utilizador da lista."""
     data = load_data()
-    if user_name in users:
-        users.remove(user_name)
+    if user_name in data["users"]:
         data["users"].remove(user_name)
-        save_data(data)  # Salva as alterações no arquivo JSON
-    data = load_data()
-    
-# Função para listar utilizadores
-def get_users():
-    """Obtém a lista de utilizadores do ficheiro JSON."""
-    data = load_data()
-    return data.get("users", [])
+    save_data(data)
 
-# FUNCOES RELACIONADAS COM AS INTERACOES DOS MENUS
+
+# GESTAO DE UTILIZADORES E FUNCOES DO MENU
 # Função para gerir utilizadores
 def manage_users():
     """Gestão de utilizadores: adicionar ou remover."""
     font = pygame.font.SysFont("Pristina", 30)
     user_input = ""
-    selected_index = 0  # Índice da seleção na lista de utilizadores
-    action = "input"  # Estado atual: "input", "list", ou "confirm"
-    confirm_selection = 0  # Seleção no menu de confirmação (0 = Sim, 1 = Não)
+    selected_index = 0
+    action = "input"
+    confirm_selection = 0
     screen.fill(black)
 
+    data = load_data()
+    global users
+
     while True:
+        data = load_data()
+        users = data["users"]
+        
         screen.fill(black)
 
         # Título do menu
@@ -114,11 +125,9 @@ def manage_users():
             screen.blit(user_display, (width // 2 - user_display.get_width() // 2, height // 2))
         elif action == "list":
             # Exibir a lista de utilizadores
-            dataUpdate = load_data()
-            usersNew = data["users"]
             users_list_font = pygame.font.SysFont("Pristina", 25)
             y_offset = height // 2 - 50
-            for idx, user in enumerate(usersNew):
+            for idx, user in enumerate(users):
                 color = green if idx == selected_index else white
                 user_text = users_list_font.render(user, True, color)
                 screen.blit(user_text, (width // 2 - 150, y_offset + idx * 30))
@@ -144,7 +153,7 @@ def manage_users():
                 screen.blit(option_text, (x_pos, height // 2 + 30))
 
         # Instruções na parte inferior
-        instructions = font.render("Setas: Navegar | Enter: Selecionar | Esc: Voltar", True, white)
+        instructions = font.render("Setas: Navegar | Enter: Selecionar | Esc: Voltar | A: Adicionar", True, white)
         screen.blit(instructions, (width // 2 - instructions.get_width() // 2, height - 50))
 
         pygame.display.update()
@@ -193,6 +202,72 @@ def manage_users():
                         else:  # "Não" selecionado
                             action = "list"  # Voltar para a lista sem apagar
  
+ 
+# funcao para ver pontuacoes                            
+def view_scores():
+    """Exibe uma janela com a lista de pontuações mais altas por jogador."""
+    data = load_data()
+    global scores
+
+    # Carregar os dados do JSON
+    try:
+        with open("users_and_scores.json", "r") as file:
+            data = json.load(file)
+            if not data.get("scores"):
+                data["scores"] = []
+            if not data.get("users"):
+                data["users"] = []
+    except FileNotFoundError:
+        data = {"users": [], "scores": []}
+    except json.JSONDecodeError:
+        print("Erro: Arquivo JSON mal formatado.")
+        data = {"users": [], "scores": []}
+
+    # Criar um dicionário para armazenar as maiores pontuações
+    high_scores = {}
+    for score_entry in data.get("scores", []):
+        user = score_entry.get("user")
+        score = score_entry.get("score", 0)
+        if user not in high_scores or score > high_scores[user]:
+            high_scores[user] = score
+
+    print("Pontuações mais altas:", high_scores)  # Depuração
+
+    # Configuração da janela
+    running = True
+    while running:
+        screen.fill(black)
+
+        # Título
+        title_font = pygame.font.SysFont("Pristina", 40)
+        option_font = pygame.font.SysFont("Pristina", 25)
+        title_text = title_font.render("Pontuações Mais Altas", True, aqua)
+        screen.blit(title_text, (width // 2 - title_text.get_width() // 2, height // 10))
+
+        # Exibir pontuações
+        y_offset = height // 5
+        spacing = 30
+        for user, score in high_scores.items():
+            score_text = option_font.render(f"{user}: {score}", True, white)
+            screen.blit(score_text, (width // 2 - score_text.get_width() // 2, y_offset))
+            y_offset += spacing
+
+        # Opção para voltar ao menu
+        back_text = option_font.render("Pressione ESC para voltar", True, red)
+        screen.blit(back_text, (width // 2 - back_text.get_width() // 2, height - 50))
+
+        pygame.display.update()
+
+        # Eventos
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+            elif event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_ESCAPE:
+                    running = False  # Voltar ao menu principal
+
+                             
 def load_users_from_json(file_path="users_and_scores.json"):
     """Carrega a lista de utilizadores de um ficheiro JSON."""
     try:
@@ -310,9 +385,9 @@ def show_menu():
                             screen.fill(black)
                             run_game(selected_user)
                     elif selected_index == 1:  # Gerir utilizadores
-                        return "manage_users"
+                        manage_users()
                     elif selected_index == 2:  # ver pontuações
-                        return "view_scores"
+                        view_scores()
                     elif selected_index == 3:  # Sair
                         pygame.quit()
                         sys.exit()
