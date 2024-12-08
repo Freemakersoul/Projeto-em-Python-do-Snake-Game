@@ -45,8 +45,6 @@ def load_data():
 
 # variaveis globais para os dados do ficheiro JSON
 data = load_data()
-
-
 users = data["users"]
 
 # Funcao que salva os dados no ficheiro JSON
@@ -88,24 +86,25 @@ def manage_users():
     global users
 
     while True:
-        data = load_data()
-        users = data["users"]
+        # Carregar os dados dos utilizadores apenas quando necessário
+        if action == "input" or action == "list":
+            data = load_data()
+            users = data["users"]
 
         screen.fill(black)
 
         # Título do menu
         title_text = font.render("Gerir Utilizadores", True, aqua)
-        screen.blit(title_text, (width // 2 -
-                    title_text.get_width() // 2, height // 4))
+        screen.blit(title_text, (width // 2 - title_text.get_width() // 2, height // 4))
 
+        # Exibir menu principal ou confirmação de remoção
         if action == "input":
             # Exibir prompt para digitar o nome
             prompt = font.render("Digite o nome de utilizador:", True, white)
-            screen.blit(
-                prompt, (width // 2 - prompt.get_width() // 2, height // 2 - 50))
+            screen.blit(prompt, (width // 2 - prompt.get_width() // 2, height // 2 - 50))
             user_display = font.render(user_input, True, green)
-            screen.blit(user_display, (width // 2 -
-                        user_display.get_width() // 2, height // 2))
+            screen.blit(user_display, (width // 2 - user_display.get_width() // 2, height // 2))
+
         elif action == "list":
             # Exibir a lista de utilizadores
             users_list_font = pygame.font.SysFont("Pristina", 25)
@@ -113,24 +112,22 @@ def manage_users():
             for idx, user in enumerate(users):
                 color = green if idx == selected_index else white
                 user_text = users_list_font.render(user, True, color)
-                screen.blit(user_text, (width // 2 - 150, y_offset + idx * 30))
+                screen.blit(user_text, (width // 2 - 100, y_offset + idx * 30))
 
                 # Botão "Apagar"
                 delete_color = red if idx == selected_index else white
-                delete_text = users_list_font.render(
-                    "Apagar", True, delete_color)
-                screen.blit(delete_text, (width // 2 +
-                            100, y_offset + idx * 30))
-        elif action == "confirm":
-            # Confirmação para apagar utilizador
-            confirm_font = pygame.font.SysFont("Pristina", 28)
-            confirm_prompt = confirm_font.render(
-                f"Tem certeza que deseja apagar {users[selected_index]}?", True, white
-            )
-            screen.blit(confirm_prompt, (width // 2 -
-                        confirm_prompt.get_width() // 2, height // 2 - 50))
+                delete_text = users_list_font.render("Apagar", True, delete_color)
+                screen.blit(delete_text, (width // 2 + 50, y_offset + idx * 30))
 
-            # Opções de confirmação
+        elif action == "confirm":
+            # Exibir confirmação para apagar utilizador
+            confirm_font = pygame.font.SysFont("Pristina", 28)
+            # Nome do utilizador selecionado para apagar
+            user_to_remove = users[selected_index]
+            confirm_prompt = confirm_font.render(f"Tem certeza que deseja apagar {user_to_remove}?", True, white)
+            screen.blit(confirm_prompt, (width // 2 - confirm_prompt.get_width() // 2, height // 2 - 50))
+
+            # Opções de confirmação: "Sim" ou "Não"
             options = ["Sim", "Não"]
             for idx, option in enumerate(options):
                 color = green if idx == confirm_selection else white
@@ -139,11 +136,8 @@ def manage_users():
                 screen.blit(option_text, (x_pos, height // 2 + 30))
 
         # Instruções na parte inferior
-        instructions = font.render(
-            "Setas: Navegar | Enter: Selecionar | Esc: Voltar | A: Adicionar | Delete: Apagar", True, white
-        )
-        screen.blit(instructions, (width // 2 -
-                    instructions.get_width() // 2, height - 50))
+        instructions = font.render("Setas: Navegar | Enter: Selecionar ||   Voltar   || A: Adicionar | Delete: Apagar", True, white)
+        screen.blit(instructions, (width // 2 - instructions.get_width() // 2, height - 50))
 
         pygame.display.update()
 
@@ -151,6 +145,7 @@ def manage_users():
             if event.type == pygame.QUIT:
                 pygame.quit()
                 sys.exit()
+
             elif event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_ESCAPE:  # Voltar ao menu principal
                     if action == "confirm":
@@ -180,8 +175,6 @@ def manage_users():
                             confirm_selection = 0  # Selecionar "Sim" por padrão
                     elif event.key == pygame.K_a:  # Voltar para adicionar um utilizador
                         action = "input"
-                    elif event.key == pygame.K_DELETE:  # Ir para o menu de remover
-                        pass  # Já estamos no estado de lista
                 elif action == "confirm":
                     if event.key == pygame.K_LEFT:  # Navegar para "Sim"
                         confirm_selection = (confirm_selection - 1) % 2
@@ -191,10 +184,74 @@ def manage_users():
                         if confirm_selection == 0:  # "Sim" selecionado
                             remove_user(users[selected_index])
                             action = "list"  # Voltar para a lista após apagar
-                            selected_index = min(selected_index, len(
-                                users) - 1)  # Ajustar índice
+                            selected_index = min(selected_index, len(users) - 1)  # Ajustar índice
                         else:  # "Não" selecionado
                             action = "list"  # Voltar para a lista sem apagar
+
+            # Mouse events for navigation (agora restringido ao menu de confirmação)
+            elif event.type == pygame.MOUSEMOTION:
+                mouse_x, mouse_y = pygame.mouse.get_pos()
+
+                if action == "confirm":
+                    # Verificar se o mouse está sobre as opções "Sim" ou "Não" de confirmação
+                    confirm_rects = [pygame.Rect(width // 2 - 50, height // 2 + 30, 50, 30),
+                                     pygame.Rect(width // 2 + 50, height // 2 + 30, 50, 30)]
+                    for idx, rect in enumerate(confirm_rects):
+                        if rect.collidepoint(mouse_x, mouse_y):
+                            confirm_selection = idx  # Destacar a opção "Sim" ou "Não"
+
+                # Caso não esteja no menu de confirmação, não fazer nada com o mouse
+                else:
+                    # Verificar se o mouse está sobre um utilizador ou botão "Apagar"
+                    for idx in range(len(users)):
+                        user_rect = pygame.Rect(width // 2 - 150, height // 2 - 50 + idx * 30, 200, 30)
+                        delete_rect = pygame.Rect(width // 2 + 100, height // 2 - 50 + idx * 30, 100, 30)
+
+                        if user_rect.collidepoint(mouse_x, mouse_y):
+                            selected_index = idx  # Destacar a opção de utilizador
+                        elif delete_rect.collidepoint(mouse_x, mouse_y):
+                            selected_index = idx  # Destacar a opção de apagar
+
+            elif event.type == pygame.MOUSEBUTTONDOWN:
+                if event.button == 1:  # Clique do botão esquerdo do mouse
+                    mouse_x, mouse_y = pygame.mouse.get_pos()
+                    
+                    if action == "input":
+                        # Se o clique ocorrer no campo de digitação, ir para a lista de utilizadores
+                        user_rect = pygame.Rect(width // 2 - 150, height // 2 - 50, 300, 30)  # Área do campo de entrada
+                        if user_rect.collidepoint(mouse_x, mouse_y):
+                            action = "list"  # Ir para a lista de utilizadores ao clicar
+
+                    elif action == "confirm":
+                        # Verificar se o clique está nas opções "Sim" ou "Não" de confirmação
+                        confirm_rects = [pygame.Rect(width // 2 - 50, height // 2 + 30, 50, 30),
+                                         pygame.Rect(width // 2 + 50, height // 2 + 30, 50, 30)]
+                        for idx, rect in enumerate(confirm_rects):
+                            if rect.collidepoint(mouse_x, mouse_y):
+                                confirm_selection = idx  # Selecionar "Sim" ou "Não"
+                                if confirm_selection == 0:  # "Sim" selecionado
+                                    remove_user(users[selected_index])
+                                    action = "list"  # Voltar para a lista após apagar
+                                    selected_index = min(selected_index, len(users) - 1)
+                                else:  # "Não" selecionado
+                                    action = "list"  # Voltar para a lista sem apagar
+
+                    # Caso não esteja no menu de confirmação, o clique não terá efeito
+                    else:
+                        # Verificar se o clique está em um utilizador ou botão "Apagar"
+                        for idx in range(len(users)):
+                            user_rect = pygame.Rect(width // 2 - 150, height // 2 - 50 + idx * 30, 200, 30)
+                            delete_rect = pygame.Rect(width // 2 + 100, height // 2 - 50 + idx * 30, 100, 30)
+
+                            if user_rect.collidepoint(mouse_x, mouse_y):
+                                selected_index = idx  # Selecionar utilizador
+                                action = "confirm"  # Ir para a confirmação de apagar
+                                confirm_selection = 0  # "Sim" por padrão
+                            elif delete_rect.collidepoint(mouse_x, mouse_y):
+                                selected_index = idx  # Selecionar a opção de apagar
+                                action = "confirm"  # Ir para a confirmação de apagar
+                                confirm_selection = 0  # "Sim" por padrão
+
 
 def save_score(user_name, score):
         data = load_data()
@@ -214,8 +271,8 @@ def save_score(user_name, score):
                 unknown_index = data["users"].index("unknown")
                 data["scores"][unknown_index].append(score)
 
-        save_data(data)
-        
+        save_data(data)        
+
 
 def view_scores():
     """Exibe as pontuações dos jogadores em uma lista."""
@@ -230,23 +287,21 @@ def view_scores():
 
     # Título
     title_text = font.render("Pontuações dos Jogadores", True, aqua)
-    screen.blit(title_text, (width // 2 -
-                title_text.get_width() // 2, height // 4))
+    screen.blit(title_text, (width // 2 - title_text.get_width() // 2, height // 4))
 
     y_offset = height // 4 + 60  # Espaço inicial para a lista de pontuações
 
     # Exibir os jogadores e suas pontuações
     for idx, user in enumerate(users):
         user_scores = scores[idx] if idx < len(scores) else []
-        user_score_text = font.render(
-            f"{user}: {user_scores} pontos", True, white)
-        screen.blit(user_score_text, (width // 2 -
-                    user_score_text.get_width() // 2, y_offset + idx * 40))
+        user_score_text = font.render(f"{user}: {user_scores} pontos", True, white)
+        screen.blit(user_score_text, (width // 2 - user_score_text.get_width() // 2, y_offset + idx * 40))
 
     # Instruções para voltar ao menu
-    instructions = font.render("Esc: Voltar ao menu", True, white)
-    screen.blit(instructions, (width // 2 -
-                instructions.get_width() // 2, height - 50))
+    instructions_text = "Voltar"
+    instructions = font.render(instructions_text, True, white)
+    instructions_rect = instructions.get_rect(center=(width // 2, height - 50))
+    screen.blit(instructions, instructions_rect)
 
     pygame.display.update()
 
@@ -256,9 +311,44 @@ def view_scores():
             if event.type == pygame.QUIT:
                 pygame.quit()
                 sys.exit()
+
             elif event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_ESCAPE:  # Voltar ao menu principal
                     return
+
+            elif event.type == pygame.MOUSEMOTION:
+                # Verificar se o mouse está sobre a opção "Esc: Voltar ao menu"
+                mouse_x, mouse_y = pygame.mouse.get_pos()
+                if instructions_rect.collidepoint(mouse_x, mouse_y):
+                    # Alterar a cor para verde quando o mouse passar sobre a opção
+                    instructions = font.render(instructions_text, True, green)
+                    screen.fill(black)
+                    screen.blit(title_text, (width // 2 - title_text.get_width() // 2, height // 4))
+                    for idx, user in enumerate(users):
+                        user_scores = scores[idx] if idx < len(scores) else []
+                        user_score_text = font.render(f"{user}: {user_scores} pontos", True, white)
+                        screen.blit(user_score_text, (width // 2 - user_score_text.get_width() // 2, y_offset + idx * 40))
+                    screen.blit(instructions, instructions_rect)
+                    pygame.display.update()
+
+                else:
+                    # Caso contrário, manter a cor original (branca)
+                    instructions = font.render(instructions_text, True, white)
+                    screen.fill(black)
+                    screen.blit(title_text, (width // 2 - title_text.get_width() // 2, height // 4))
+                    for idx, user in enumerate(users):
+                        user_scores = scores[idx] if idx < len(scores) else []
+                        user_score_text = font.render(f"{user}: {user_scores} pontos", True, white)
+                        screen.blit(user_score_text, (width // 2 - user_score_text.get_width() // 2, y_offset + idx * 40))
+                    screen.blit(instructions, instructions_rect)
+                    pygame.display.update()
+
+            elif event.type == pygame.MOUSEBUTTONDOWN:
+                if event.button == 1:  # Clique do botão esquerdo do mouse
+                    mouse_x, mouse_y = pygame.mouse.get_pos()
+                    if instructions_rect.collidepoint(mouse_x, mouse_y):
+                        # Se clicar na opção "Esc: Voltar ao menu", voltar ao menu
+                        return
 
 
 def load_users_from_json(file_path="users_and_scores.json"):
@@ -275,9 +365,9 @@ def load_users_from_json(file_path="users_and_scores.json"):
         print("Erro ao decodificar o ficheiro JSON. Verifique o formato.")
         return ["unknown"]
 
-
+# funcao para selecionar o utilizador
 def select_user():
-    """Exibe um submenu para selecionar o utilizador antes de começar o jogo."""
+    """Exibe um submenu para selecionar o utilizador antes de começar o jogo, com navegação por teclado e rato."""
     # Configurações iniciais
     title_font = pygame.font.SysFont("Pristina", 40)
     option_font = pygame.font.SysFont("Pristina", 30)
@@ -290,22 +380,34 @@ def select_user():
     if not users:  # Garantir que existe ao menos "unknown"
         users = ["unknown"]
 
+    options = users + ["Voltar"]  # Combina a lista de utilizadores com a opção "Voltar"
     selected_index = 0  # Índice da opção selecionada
 
     while True:
         screen.fill(black)
-        screen.blit(title_text, (width // 2 -
-                    title_text.get_width() // 2, height // 4))
+        screen.blit(title_text, (width // 2 - title_text.get_width() // 2, height // 4))
 
-        # Desenho das opções
+        # Pega a posição do mouse
+        mouse_x, mouse_y = pygame.mouse.get_pos()
+
+        # Desenho das opções (utilizadores + "Voltar")
         spacing = 40
         start_y = height // 4 + 80
 
-        for i, user in enumerate(users):
-            color = green if i == selected_index else white
-            user_text = option_font.render(user, True, color)
-            screen.blit(user_text, (width // 2 -
-                        user_text.get_width() // 2, start_y + i * spacing))
+        for i, option in enumerate(options):
+            # Verifica se o mouse está sobre a opção
+            option_rect = pygame.Rect(width // 2 - option_font.size(option)[0] // 2,
+                                      start_y + i * spacing, option_font.size(option)[0], option_font.size(option)[1])
+
+            # Destacar a opção se o mouse estiver sobre ela
+            if option_rect.collidepoint(mouse_x, mouse_y):
+                color = green
+                selected_index = i  # Atualiza o índice selecionado com o mouse
+            else:
+                color = green if i == selected_index else white
+
+            option_text = option_font.render(option, True, color)
+            screen.blit(option_text, (width // 2 - option_text.get_width() // 2, start_y + i * spacing))
 
         pygame.display.update()
 
@@ -314,33 +416,50 @@ def select_user():
             if event.type == pygame.QUIT:
                 pygame.quit()
                 sys.exit()
+
             elif event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_UP:  # Navegar para cima
-                    selected_index = (selected_index - 1) % len(users)
+                    selected_index = (selected_index - 1) % len(options)
                 elif event.key == pygame.K_DOWN:  # Navegar para baixo
-                    selected_index = (selected_index + 1) % len(users)
-                elif event.key == pygame.K_RETURN:  # Selecionar utilizador
-                    return users[selected_index]
+                    selected_index = (selected_index + 1) % len(options)
+                elif event.key == pygame.K_RETURN:  # Selecionar opção com Enter
+                    if selected_index == len(options) - 1:  # Se a opção selecionada for "Voltar"
+                        return None  # Volta ao menu principal
+                    else:
+                        return options[selected_index]  # Retorna o utilizador selecionado
                 elif event.key == pygame.K_ESCAPE:  # Voltar ao menu principal
-                    return None
+                    return None  # Retorna None para indicar que o jogador não selecionou um usuário
+
+            elif event.type == pygame.MOUSEMOTION:
+                # Verifica se o mouse moveu e altera a seleção dinamicamente
+                for i, option in enumerate(options):
+                    option_rect = pygame.Rect(width // 2 - option_font.size(option)[0] // 2,
+                                              start_y + i * spacing, option_font.size(option)[0], option_font.size(option)[1])
+                    if option_rect.collidepoint(mouse_x, mouse_y):
+                        selected_index = i  # Atualiza o índice selecionado se o mouse passar sobre a opção
+
+            elif event.type == pygame.MOUSEBUTTONDOWN:
+                if event.button == 1:  # Se o botão esquerdo do mouse for pressionado
+                    # Verificar se o clique foi na opção "Voltar"
+                    if selected_index == len(options) - 1:  # Se for "Voltar"
+                        return None  # Volta ao menu principal
+                    else:
+                        return options[selected_index]  # Retorna o utilizador selecionado
 
 
 # MENU PRINCIPAL
 # Função para desenhar o menu principal
 def show_menu():
-    """Exibe o menu principal com navegação por setas e seleção."""
+    """Exibe o menu principal com navegação por setas e seleção por teclado ou rato."""
     screen.fill(black)
 
     # Configurações das fontes
-    title_font = pygame.font.SysFont(
-        "Pristina", 50)  # Fonte maior para o título
-    option_font = pygame.font.SysFont(
-        "Pristina", 30)  # Fonte menor para as opções
+    title_font = pygame.font.SysFont("Pristina", 50)  # Fonte maior para o título
+    option_font = pygame.font.SysFont("Pristina", 30)  # Fonte menor para as opções
 
     # Título do menu
     title_text = title_font.render("Bem-vindo ao Snake Game!", True, aqua)
-    screen.blit(title_text, (width // 2 -
-                title_text.get_width() // 2, height // 4))
+    screen.blit(title_text, (width // 2 - title_text.get_width() // 2, height // 4))
 
     # Opções do menu
     menu_options = [
@@ -358,16 +477,25 @@ def show_menu():
 
     while True:
         screen.fill(black)
-        screen.blit(title_text, (width // 2 -
-                    title_text.get_width() // 2, height // 4))
+        screen.blit(title_text, (width // 2 - title_text.get_width() // 2, height // 4))
+
+        # Pega a posição do mouse
+        mouse_x, mouse_y = pygame.mouse.get_pos()
 
         # Desenho das opções
         for i, option in enumerate(menu_options):
-            # Cor diferente para a opção selecionada
-            color = green if i == selected_index else white
+            # Verifica se o mouse está sobre a opção
+            option_rect = pygame.Rect(width // 2 - option_font.size(option)[0] // 2,
+                                      start_y + i * spacing, option_font.size(option)[0], option_font.size(option)[1])
+            
+            if option_rect.collidepoint(mouse_x, mouse_y):
+                color = green  # Destacar opção se o mouse estiver sobre ela
+                selected_index = i  # Atualizar índice selecionado com o mouse
+            else:
+                color = green if i == selected_index else white
+
             option_text = option_font.render(option, True, color)
-            screen.blit(option_text, (width // 2 -
-                        option_text.get_width() // 2, start_y + i * spacing))
+            screen.blit(option_text, (width // 2 - option_text.get_width() // 2, start_y + i * spacing))
 
         pygame.display.update()
 
@@ -375,12 +503,13 @@ def show_menu():
             if event.type == pygame.QUIT:
                 pygame.quit()
                 sys.exit()
+
             elif event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_UP:  # Navegar para cima
                     selected_index = (selected_index - 1) % len(menu_options)
                 elif event.key == pygame.K_DOWN:  # Navegar para baixo
                     selected_index = (selected_index + 1) % len(menu_options)
-                elif event.key == pygame.K_RETURN:  # Selecionar opção
+                elif event.key == pygame.K_RETURN:  # Selecionar opção com Enter
                     if selected_index == 0:  # Jogar
                         selected_user = select_user()
                         if selected_user:  # Verifica se um utilizador foi selecionado
@@ -388,14 +517,31 @@ def show_menu():
                             run_game(selected_user)
                     elif selected_index == 1:  # Gerir utilizadores
                         manage_users()
-                    elif selected_index == 2:  # ver pontuações
+                    elif selected_index == 2:  # Ver pontuações
                         view_scores()
                     elif selected_index == 3:  # Sair
                         pygame.quit()
                         sys.exit()
+
                 elif event.key == pygame.K_ESCAPE:  # Sair do menu
                     pygame.quit()
                     sys.exit()
+
+            elif event.type == pygame.MOUSEBUTTONDOWN:
+                if event.button == 1:  # Se o botão esquerdo do mouse for pressionado
+                    # Selecionar a opção clicada com o mouse
+                    if selected_index == 0:  # Jogar
+                        selected_user = select_user()
+                        if selected_user:  # Verifica se um utilizador foi selecionado
+                            screen.fill(black)
+                            run_game(selected_user)
+                    elif selected_index == 1:  # Gerir utilizadores
+                        manage_users()
+                    elif selected_index == 2:  # Ver pontuações
+                        view_scores()
+                    elif selected_index == 3:  # Sair
+                        pygame.quit()
+                        sys.exit()
 
 # Funcao para pausar o jogo
 def pause_game():
@@ -457,6 +603,7 @@ def display_username(selected_user):
         10  # Subtraímos a largura do nome do usuário e algum espaço
     # Posição do nome do jogador
     username_x = width - padding - text_username.get_width()
+    
     # Exibindo "Jogador:" e o nome do jogador na tela
     screen.blit(text_player, (player_x, 3))  # "Jogador:" posicionado à direita
     # Nome do usuário posicionado à direita de "Jogador:"
@@ -515,7 +662,7 @@ def snake_direction(key):
 # funcao principal do jogo
 def run_game(selected_user):
     end_game = False  # declaracao da variavel booleana para o loop
-
+    
     # garante que as posições iniciais da cobra estejam alinhadas aos múltiplos de square_size
     snake_x = round((width / 2) / square_size) * square_size
     # garante que as posições iniciais da cobra estejam alinhadas aos múltiplos de square_size
