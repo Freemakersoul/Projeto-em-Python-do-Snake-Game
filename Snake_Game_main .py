@@ -161,6 +161,8 @@ def manage_users():
                 if event.key == pygame.K_ESCAPE:  # Voltar ao menu principal
                     if action == "confirm":
                         action = "list"  # Voltar para a lista sem apagar
+                    elif action == "list":
+                        action = "input"  # Voltar para o modo de adicionar utilizador
                     else:
                         return
                 elif action == "input":
@@ -293,8 +295,8 @@ def select_user():
     if not users:  # Garantir que existe ao menos "unknown"
         users = ["unknown"]
 
-    options = users + ["Voltar"]  # Combina a lista de utilizadores com a opção "Voltar"
     selected_index = 0  # Índice da opção selecionada
+    is_back_selected = False  # Indica se "Voltar" está selecionado
 
     while True:
         screen.fill(black)
@@ -303,24 +305,41 @@ def select_user():
         # Pega a posição do mouse
         mouse_x, mouse_y = pygame.mouse.get_pos()
 
-        # Desenho das opções (utilizadores + "Voltar")
+        # Desenho das opções (utilizadores)
         spacing = 40
         start_y = height // 4 + 80
 
-        for i, option in enumerate(options):
-            # Verifica se o mouse está sobre a opção
-            option_rect = pygame.Rect(width // 2 - option_font.size(option)[0] // 2,
-                                      start_y + i * spacing, option_font.size(option)[0], option_font.size(option)[1])
+        for i, user in enumerate(users):
+            # Verifica se o mouse está sobre o nome do utilizador
+            user_rect = pygame.Rect(width // 2 - option_font.size(user)[0] // 2,
+                                    start_y + i * spacing, option_font.size(user)[0], option_font.size(user)[1])
 
-            # Destacar a opção se o mouse estiver sobre ela
-            if option_rect.collidepoint(mouse_x, mouse_y):
+            # Destacar o utilizador se o mouse estiver sobre ele
+            if user_rect.collidepoint(mouse_x, mouse_y):
                 color = green
-                selected_index = i  # Atualiza o índice selecionado com o mouse
+                selected_index = i
+                is_back_selected = False  # Focar no utilizador, não em "Voltar"
             else:
-                color = green if i == selected_index else white
+                color = green if i == selected_index and not is_back_selected else white
 
-            option_text = option_font.render(option, True, color)
-            screen.blit(option_text, (width // 2 - option_text.get_width() // 2, start_y + i * spacing))
+            user_text = option_font.render(user, True, color)
+            screen.blit(user_text, (width // 2 - user_text.get_width() // 2, start_y + i * spacing))
+
+        # Desenho da opção "Voltar"
+        back_text = "Voltar"
+        back_y = start_y + len(users) * spacing + 40  # Posicionar "Voltar" abaixo dos utilizadores
+        back_rect = pygame.Rect(width // 2 - option_font.size(back_text)[0] // 2,
+                                back_y, option_font.size(back_text)[0], option_font.size(back_text)[1])
+
+        # Destacar "Voltar" se o mouse estiver sobre ele
+        if back_rect.collidepoint(mouse_x, mouse_y):
+            color = green
+            is_back_selected = True  # Focar em "Voltar"
+        else:
+            color = green if is_back_selected else red
+
+        back_surface = option_font.render(back_text, True, color)
+        screen.blit(back_surface, (width // 2 - back_surface.get_width() // 2, back_y))
 
         pygame.display.update()
 
@@ -332,33 +351,45 @@ def select_user():
 
             elif event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_UP:  # Navegar para cima
-                    selected_index = (selected_index - 1) % len(options)
-                elif event.key == pygame.K_DOWN:  # Navegar para baixo
-                    selected_index = (selected_index + 1) % len(options)
-                elif event.key == pygame.K_RETURN:  # Selecionar opção com Enter
-                    if selected_index == len(options) - 1:  # Se a opção selecionada for "Voltar"
-                        return None  # Volta ao menu principal
+                    if is_back_selected:
+                        is_back_selected = False
+                        selected_index = len(users) - 1
                     else:
-                        return options[selected_index]  # Retorna o utilizador selecionado
+                        selected_index = (selected_index - 1) % len(users)
+                elif event.key == pygame.K_DOWN:  # Navegar para baixo
+                    if selected_index == len(users) - 1:
+                        is_back_selected = True
+                    elif is_back_selected:
+                        is_back_selected = False
+                        selected_index = 0
+                    else:
+                        selected_index = (selected_index + 1) % len(users)
+                elif event.key == pygame.K_RETURN:  # Selecionar opção com Enter
+                    if is_back_selected:  # Selecionou "Voltar"
+                        return None
+                    else:
+                        return users[selected_index]  # Retorna o utilizador selecionado
                 elif event.key == pygame.K_ESCAPE:  # Voltar ao menu principal
-                    return None  # Retorna None para indicar que o jogador não selecionou um usuário
+                    return None  # Retorna None para indicar que o jogador não selecionou um utilizador
 
             elif event.type == pygame.MOUSEMOTION:
                 # Verifica se o mouse moveu e altera a seleção dinamicamente
-                for i, option in enumerate(options):
-                    option_rect = pygame.Rect(width // 2 - option_font.size(option)[0] // 2,
-                                              start_y + i * spacing, option_font.size(option)[0], option_font.size(option)[1])
-                    if option_rect.collidepoint(mouse_x, mouse_y):
-                        selected_index = i  # Atualiza o índice selecionado se o mouse passar sobre a opção
+                if back_rect.collidepoint(mouse_x, mouse_y):
+                    is_back_selected = True
+                else:
+                    for i, user in enumerate(users):
+                        user_rect = pygame.Rect(width // 2 - option_font.size(user)[0] // 2,
+                                                start_y + i * spacing, option_font.size(user)[0], option_font.size(user)[1])
+                        if user_rect.collidepoint(mouse_x, mouse_y):
+                            selected_index = i
+                            is_back_selected = False
 
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 if event.button == 1:  # Se o botão esquerdo do mouse for pressionado
-                    # Verificar se o clique foi na opção "Voltar"
-                    if selected_index == len(options) - 1:  # Se for "Voltar"
-                        return None  # Volta ao menu principal
+                    if is_back_selected:  # Verifica se "Voltar" foi clicado
+                        return None
                     else:
-                        return options[selected_index]  # Retorna o utilizador selecionado
-
+                        return users[selected_index]  # Retorna o utilizador selecionado
 
 # GESTAO E APRESENTACAO DE PONTUACOES ASSOCIADAS AOS UTILIZADORES (FICHEIRO JSON)
 # Funcao que guarda as pontuacoes
@@ -419,17 +450,23 @@ def view_scores():
                     if user_scores:
                         max_score = max(user_scores)
                         last_score = user_scores[-1]
-                        score_text = f"{user}       última: {last_score}      melhor: {max_score}"
+                        score_text = f"       última:  {last_score} pts      melhor:  {max_score} pts"
                     else:
-                        score_text = f"{user}: Sem pontuações"
+                        score_text = "Sem pontuações"
                     
+                    # Renderizando o nome do usuário em verde
+                    user_surface = font.render(user, True, green)  # Cor verde
+                    screen.blit(user_surface, (width // 2 - 230, y_offset))  # Alinhe com o restante do texto
+                    
+                    # Renderizando as pontuações em branco
                     score_surface = font.render(score_text, True, white)
-                    screen.blit(score_surface, (width // 2 - score_surface.get_width() // 2, y_offset))
+                    screen.blit(score_surface, (width // 2 - 230 + user_surface.get_width() + 10, y_offset))
+                    
                     y_offset += 40
             
             # Definindo a área do botão "Voltar"
             back_text = "Voltar"
-            back_surface = font.render(back_text, True, white)
+            back_surface = font.render(back_text, True, red)
             back_rect = back_surface.get_rect(center=(width // 2, height - 50))
             
             # Verificando a posição do mouse
@@ -503,7 +540,11 @@ def show_menu():
                 color = green  # Destacar opção se o mouse estiver sobre ela
                 selected_index = i  # Atualizar índice selecionado com o mouse
             else:
-                color = green if i == selected_index else white
+                # Define a cor: vermelho para "Sair", senão normal (verde ou branco)
+                if i == len(menu_options) - 1:  # Última opção é "Sair"
+                    color = red if i != selected_index else green
+                else:
+                    color = green if i == selected_index else white
 
             option_text = option_font.render(option, True, color)
             screen.blit(option_text, (width // 2 - option_text.get_width() // 2, start_y + i * spacing))
