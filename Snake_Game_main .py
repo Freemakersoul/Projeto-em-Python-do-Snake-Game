@@ -31,28 +31,36 @@ snake_speed = 15  # velocidade da cobra a cada iteracao do loop
 game_state = "menu"  # Estados possíveis: "menu", "jogo"
 
 
-# MANIPULACAO DE FICHEIROS JSON
+# MANIPULACAO DO FICHEIRO JSON
 JSON_FILE = "users_and_scores.json"
 
+# Create initial JSON file if it doesn't exist
 if not os.path.exists(JSON_FILE):
     with open(JSON_FILE, "w") as file:
-        json.dump({"users": {}, "scores": []}, file)
+        json.dump({"users": [], "scores": {}}, file, indent=4)
 
-# Funcao que carrega os dados do ficheiro JSON
 def load_data():
-    with open(JSON_FILE, "r") as file:
-        return json.load(file)
+    """Carrega os dados do ficheiro JSON."""
+    try:
+        with open(JSON_FILE, "r") as file:
+            return json.load(file)
+    except FileNotFoundError:
+        print(f"Score file not found: {JSON_FILE}")
+        return {"users": [], "scores": {}}
+    except json.JSONDecodeError:
+        print(f"Error reading score file: {JSON_FILE}")
+        return {"users": [], "scores": {}}
 
-# variaveis globais para os dados do ficheiro JSON
-data = load_data()
-users = data["users"]
-
-# Funcao que salva os dados no ficheiro JSON
 def save_data(data):
     """Guarda os dados no ficheiro JSON."""
-    with open(JSON_FILE, "w") as file:
-        json.dump(data, file, indent=4)
+    try:
+        with open(JSON_FILE, "w") as file:
+            json.dump(data, file, indent=4)
+    except Exception as e:
+        print(f"Error saving data: {e}")
 
+
+# GESTAO DE UTILIZADORES
 # Função para adicionar um utilizador
 def add_user(user_name):
     """Adiciona um utilizador à lista."""
@@ -60,6 +68,7 @@ def add_user(user_name):
         data = load_data()
         if user_name not in data["users"]:
             data["users"].append(user_name)
+            data["scores"][user_name] = []  # Initialize empty score list for new user
         save_data(data)
 
 # Função para remover um utilizador
@@ -68,6 +77,8 @@ def remove_user(user_name):
     data = load_data()
     if user_name in data["users"]:
         data["users"].remove(user_name)
+        if user_name in data["scores"]:
+            del data["scores"][user_name]  # Remove user's scores
     save_data(data)
 
 
@@ -136,7 +147,7 @@ def manage_users():
                 screen.blit(option_text, (x_pos, height // 2 + 30))
 
         # Instruções na parte inferior
-        instructions = font.render("Setas: Navegar | Enter: Selecionar ||   Voltar   || A: Adicionar | Delete: Apagar", True, white)
+        instructions = font.render("Setas: Navegar | Enter: Selecionar ||  ESC: Voltar   || A: Adicionar | Delete: Apagar", True, white)
         screen.blit(instructions, (width // 2 - instructions.get_width() // 2, height - 50))
 
         pygame.display.update()
@@ -252,105 +263,7 @@ def manage_users():
                                 action = "confirm"  # Ir para a confirmação de apagar
                                 confirm_selection = 0  # "Sim" por padrão
 
-
-def save_score(user_name, score):
-        data = load_data()
-        if user_name in data["users"]:
-            user_index = data["users"].index(user_name)
-            while len(data["scores"]) <= user_index:
-                # Garante que o índice existe na lista de pontuações
-                data["scores"].append([])
-            # Adiciona a pontuação ao jogador
-            data["scores"][user_index].append(score)
-        else:
-            # Caso o usuário não esteja na lista, adicione-o como "unknown"
-            if "unknown" not in data["users"]:
-                data["users"].append("unknown")
-                data["scores"].append([score])
-            else:
-                unknown_index = data["users"].index("unknown")
-                data["scores"][unknown_index].append(score)
-
-        save_data(data)        
-
-
-def view_scores():
-    """Exibe as pontuações dos jogadores em uma lista."""
-    font = pygame.font.SysFont("Pristina", 30)
-
-    # Carregar os dados do arquivo JSON
-    data = load_data()
-    users = data["users"]
-    scores = data["scores"]
-
-    screen.fill(black)
-
-    # Título
-    title_text = font.render("Pontuações dos Jogadores", True, aqua)
-    screen.blit(title_text, (width // 2 - title_text.get_width() // 2, height // 4))
-
-    y_offset = height // 4 + 60  # Espaço inicial para a lista de pontuações
-
-    # Exibir os jogadores e suas pontuações
-    for idx, user in enumerate(users):
-        user_scores = scores[idx] if idx < len(scores) else []
-        user_score_text = font.render(f"{user}: {user_scores} pontos", True, white)
-        screen.blit(user_score_text, (width // 2 - user_score_text.get_width() // 2, y_offset + idx * 40))
-
-    # Instruções para voltar ao menu
-    instructions_text = "Voltar"
-    instructions = font.render(instructions_text, True, white)
-    instructions_rect = instructions.get_rect(center=(width // 2, height - 50))
-    screen.blit(instructions, instructions_rect)
-
-    pygame.display.update()
-
-    # Gerenciar eventos
-    while True:
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                pygame.quit()
-                sys.exit()
-
-            elif event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_ESCAPE:  # Voltar ao menu principal
-                    return
-
-            elif event.type == pygame.MOUSEMOTION:
-                # Verificar se o mouse está sobre a opção "Esc: Voltar ao menu"
-                mouse_x, mouse_y = pygame.mouse.get_pos()
-                if instructions_rect.collidepoint(mouse_x, mouse_y):
-                    # Alterar a cor para verde quando o mouse passar sobre a opção
-                    instructions = font.render(instructions_text, True, green)
-                    screen.fill(black)
-                    screen.blit(title_text, (width // 2 - title_text.get_width() // 2, height // 4))
-                    for idx, user in enumerate(users):
-                        user_scores = scores[idx] if idx < len(scores) else []
-                        user_score_text = font.render(f"{user}: {user_scores} pontos", True, white)
-                        screen.blit(user_score_text, (width // 2 - user_score_text.get_width() // 2, y_offset + idx * 40))
-                    screen.blit(instructions, instructions_rect)
-                    pygame.display.update()
-
-                else:
-                    # Caso contrário, manter a cor original (branca)
-                    instructions = font.render(instructions_text, True, white)
-                    screen.fill(black)
-                    screen.blit(title_text, (width // 2 - title_text.get_width() // 2, height // 4))
-                    for idx, user in enumerate(users):
-                        user_scores = scores[idx] if idx < len(scores) else []
-                        user_score_text = font.render(f"{user}: {user_scores} pontos", True, white)
-                        screen.blit(user_score_text, (width // 2 - user_score_text.get_width() // 2, y_offset + idx * 40))
-                    screen.blit(instructions, instructions_rect)
-                    pygame.display.update()
-
-            elif event.type == pygame.MOUSEBUTTONDOWN:
-                if event.button == 1:  # Clique do botão esquerdo do mouse
-                    mouse_x, mouse_y = pygame.mouse.get_pos()
-                    if instructions_rect.collidepoint(mouse_x, mouse_y):
-                        # Se clicar na opção "Esc: Voltar ao menu", voltar ao menu
-                        return
-
-
+# Funcao que carrega os utilizadores do ficheiro JSON 
 def load_users_from_json(file_path="users_and_scores.json"):
     """Carrega a lista de utilizadores de um ficheiro JSON."""
     try:
@@ -447,6 +360,104 @@ def select_user():
                         return options[selected_index]  # Retorna o utilizador selecionado
 
 
+# GESTAO E APRESENTACAO DE PONTUACOES ASSOCIADAS AOS UTILIZADORES (FICHEIRO JSON)
+# Funcao que guarda as pontuacoes
+def save_score(user_name, score):
+    """Salva a pontuação do jogador."""
+     
+    if not user_name:
+        user_name = "unknown"
+       
+    try:
+        data = load_data()
+        
+        # Initialize user if not exists
+        if user_name not in data["users"]:
+            data["users"].append(user_name)
+        
+        # Initialize scores if not exists
+        if user_name not in data["scores"]:
+            data["scores"][user_name] = []
+        
+        # Add the score
+        data["scores"][user_name].append(score)
+        
+        # Save the data
+        save_data(data)
+        
+        
+    except Exception as e:
+        print(f"Error saving score: {e}")
+
+# Funcao que mostra o menu com a lista de pontuacoes existentes
+def view_scores():
+    """Exibe as pontuações dos jogadores em uma lista."""
+    font = pygame.font.SysFont("Pristina", 30)
+    
+    while True:
+        try:
+            # Reload data each time to get latest scores
+            data = load_data()
+            
+            users = data.get("users", [])
+            scores = data.get("scores", {})
+            
+            screen.fill(black)
+            
+            # Título
+            title_text = font.render("Pontuações dos Jogadores", True, aqua)
+            screen.blit(title_text, (width // 2 - title_text.get_width() // 2, height // 4))
+            
+            if not users:
+                no_scores_text = font.render("Nenhuma pontuação registrada", True, white)
+                screen.blit(no_scores_text, (width // 2 - no_scores_text.get_width() // 2, height // 2))
+            else:
+                y_offset = height // 4 + 60
+                
+                for user in users:
+                    user_scores = scores.get(user, [])
+                    if user_scores:
+                        max_score = max(user_scores)
+                        last_score = user_scores[-1]
+                        score_text = f"{user}       última: {last_score}      melhor: {max_score}"
+                    else:
+                        score_text = f"{user}: Sem pontuações"
+                    
+                    score_surface = font.render(score_text, True, white)
+                    screen.blit(score_surface, (width // 2 - score_surface.get_width() // 2, y_offset))
+                    y_offset += 40
+            
+            # Definindo a área do botão "Voltar"
+            back_text = "Voltar"
+            back_surface = font.render(back_text, True, white)
+            back_rect = back_surface.get_rect(center=(width // 2, height - 50))
+            
+            # Verificando a posição do mouse
+            mouse_x, mouse_y = pygame.mouse.get_pos()
+            if back_rect.collidepoint(mouse_x, mouse_y):
+                back_surface = font.render(back_text, True, (0, 255, 0))  # Cor verde ao passar o mouse
+            
+            # Exibindo o botão "Voltar"
+            screen.blit(back_surface, back_rect)
+            
+            pygame.display.update()
+            
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    pygame.quit()
+                    sys.exit()
+                elif event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_ESCAPE:
+                        return  # Voltar ao menu principal
+                elif event.type == pygame.MOUSEBUTTONDOWN:
+                    if event.button == 1 and back_rect.collidepoint(mouse_x, mouse_y):
+                        return  # Voltar ao menu principal ao clicar no botão "Voltar"
+                        
+        except Exception as e:
+            print(f"Error in view_scores: {e}")
+            return
+
+
 # MENU PRINCIPAL
 # Função para desenhar o menu principal
 def show_menu():
@@ -511,12 +522,9 @@ def show_menu():
                     selected_index = (selected_index + 1) % len(menu_options)
                 elif event.key == pygame.K_RETURN:  # Selecionar opção com Enter
                     if selected_index == 0:  # Jogar
-                        selected_user = select_user()
-                        if selected_user:  # Verifica se um utilizador foi selecionado
-                            screen.fill(black)
-                            run_game(selected_user)
+                        return "play"
                     elif selected_index == 1:  # Gerir utilizadores
-                        manage_users()
+                        return "manage_users"
                     elif selected_index == 2:  # Ver pontuações
                         view_scores()
                     elif selected_index == 3:  # Sair
@@ -531,17 +539,15 @@ def show_menu():
                 if event.button == 1:  # Se o botão esquerdo do mouse for pressionado
                     # Selecionar a opção clicada com o mouse
                     if selected_index == 0:  # Jogar
-                        selected_user = select_user()
-                        if selected_user:  # Verifica se um utilizador foi selecionado
-                            screen.fill(black)
-                            run_game(selected_user)
+                        return "play"
                     elif selected_index == 1:  # Gerir utilizadores
-                        manage_users()
+                        return "manage_users"
                     elif selected_index == 2:  # Ver pontuações
                         view_scores()
                     elif selected_index == 3:  # Sair
                         pygame.quit()
                         sys.exit()
+    return None  # Should never reach here, but added for completeness
 
 # Funcao para pausar o jogo
 def pause_game():
@@ -643,6 +649,9 @@ def drawing_snake(size, pixels):
 
 
 def snake_direction(key):
+    snake_speed_x = 0  # Initialize with default values
+    snake_speed_y = 0  # Initialize with default values
+    
     if key == pygame.K_DOWN:
         snake_speed_x = 0
         snake_speed_y = square_size
@@ -661,100 +670,95 @@ def snake_direction(key):
 # CONSTRUCAO DO JOGO / COMPONENTES DO JOGO
 # funcao principal do jogo
 def run_game(selected_user):
-    end_game = False  # declaracao da variavel booleana para o loop
+    """Função principal do jogo."""
+    if not selected_user:
+        selected_user = "unknown"
     
-    # garante que as posições iniciais da cobra estejam alinhadas aos múltiplos de square_size
+    end_game = False
     snake_x = round((width / 2) / square_size) * square_size
-    # garante que as posições iniciais da cobra estejam alinhadas aos múltiplos de square_size
     snake_y = round((height / 2) / square_size) * square_size
-
     snake_speed_x = 0
     snake_speed_y = 0
-
     snake_size = 1
-    pixels = []  # lista para armazenar as posicoes da cobra
-
+    pixels = []
     food_x, food_y = food_generator()
+    current_score = 0
 
     while not end_game:
         screen.fill(black)
-        display_username(selected_user)  # Mostra o nome selecionado
+        display_username(selected_user)
+
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
+                final_score = snake_size - 1
+                save_score(selected_user, final_score)
                 pygame.quit()
                 sys.exit()
             elif event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_ESCAPE:  # Retornar ao menu
+                if event.key == pygame.K_ESCAPE:
+                    final_score = snake_size - 1
+                    save_score(selected_user, final_score)
                     return
-                elif event.key == pygame.K_SPACE:  # Pausar o jogo
+                elif event.key == pygame.K_SPACE:
                     pause_game()
                 elif event.key in (pygame.K_DOWN, pygame.K_UP, pygame.K_RIGHT, pygame.K_LEFT):
                     snake_speed_x, snake_speed_y = snake_direction(event.key)
 
-        # atualizar a posicao da cobra
         snake_x += snake_speed_x
         snake_y += snake_speed_y
 
-        # Teletransporte: verifica os limites da tela e reposiciona no lado oposto
-        if snake_x < 0:  # Saiu pela esquerda
+        # Teletransporte
+        if snake_x < 0:
             snake_x = width - square_size
-        elif snake_x >= width:  # Saiu pela direita
+        elif snake_x >= width:
             snake_x = 0
-        if snake_y < 0:  # Saiu pelo topo
+        if snake_y < 0:
             snake_y = height - square_size
-        elif snake_y >= height:  # Saiu pela parte inferior
+        elif snake_y >= height:
             snake_y = 0
 
-        # desenhar cobra
-        # adiciona a posicao da cobra na lista
         pixels.append([snake_x, snake_y])
-        if len(pixels) > snake_size:  # movimento da cobra / apaga e adiciona pixeis
-            del pixels[0]  # apaga o pixel mais antigo
+        if len(pixels) > snake_size:
+            del pixels[0]
 
-        # verifica se a cobra colidiu com a comida
+        # Colisão com comida
         if snake_x == food_x and snake_y == food_y:
             snake_size += 1
+            current_score = snake_size - 1
             food_x, food_y = food_generator()
 
-        # verifica se a cobra colidiu com ela mesma
-        for pixel in pixels[:-1]:  # tirar o ultimo pixel da lista / a cabeca da cobra
+        # Colisão com a própria cobra
+        for pixel in pixels[:-1]:
             if pixel == [snake_x, snake_y]:
+                final_score = snake_size - 1
+                save_score(selected_user, final_score)
                 game_over_message("GAME OVER !")
                 return
 
-        # desenhar comida
         drawing_food(square_size, food_x, food_y)
-        # desenhar cobra
         drawing_snake(square_size, pixels)
-        # atualiza a pontuacao
         score(snake_size - 1)
 
-        # atualizar tela
         pygame.display.update()
         clock.tick(snake_speed)
 
-    pygame.quit()
-    sys.exit()
+# Initialize game state
+game_state = "menu"
 
-    save_data(data)  # Salva os dados
-    save_score(data)  # Salva as pontuações
-
-if game_state == "menu":
-    show_menu()  # Exibe o menu uma vez
-# Loop do menu principal do jogo
+# Main game loop
 while True:
     if game_state == "menu":
-        action = show_menu()  # Recebe a ação escolhida no menu
+        action = show_menu()  # Get menu selection
         if action == "play":
-            game_state = "jogo"
-            current_user = None  # Joga como 'unknown'
+            selected_user = select_user()  # Get user selection
+            if selected_user:  # Only start game if user was selected
+                screen.fill(black)
+                run_game(selected_user)  # Run game with selected user
         elif action == "manage_users":
-            current_user = manage_users()
+            manage_users()
         elif action == "quit":
             pygame.quit()
             sys.exit()
-    elif game_state == "jogo":
-        run_game()
-        # Após terminar o jogo, voltar ao menu
-        game_over_message("GAME OVER !")
-        game_state = "menu"
+    
+    # Always return to menu after any action
+    game_state = "menu"

@@ -1,7 +1,12 @@
 {
     "users": [
-        "Freemakersoul",
-        "Batata Frita"
+        "Freemakersoul"
     ],
-    "scores": {}
+    "scores": {
+        "Freemakersoul": [
+            21,
+            5,
+            4
+        ]
+    }
 }
