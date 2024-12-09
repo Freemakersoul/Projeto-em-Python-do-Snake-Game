@@ -145,6 +145,22 @@ def manage_users():
                 option_text = confirm_font.render(option, True, color)
                 x_pos = width // 2 - 50 + idx * 100
                 screen.blit(option_text, (x_pos, height // 2 + 30))
+                
+        # Opção "Voltar"
+        back_button_font = pygame.font.SysFont("Pristina", 28)
+        back_button_rect = None
+        back_button_text = back_button_font.render("Voltar", True, red)  # Cor original branca
+        back_button_rect = pygame.Rect(width // 2 - back_button_text.get_width() // 2, height - 100, back_button_text.get_width(), back_button_text.get_height())
+        
+        # Se o mouse passar sobre o botão "Voltar", mudar a cor para verde
+        mouse_x, mouse_y = pygame.mouse.get_pos()
+        if back_button_rect.collidepoint(mouse_x, mouse_y):
+            back_button_text = back_button_font.render("Voltar", True, green) 
+        else:
+            back_button_text = back_button_font.render("Voltar", True, red)
+            
+        screen.blit(back_button_text, back_button_rect)
+        
 
         # Instruções na parte inferior
         instructions = font.render("Setas: Navegar | Enter: Selecionar ||  ESC: Voltar   || A: Adicionar | Delete: Apagar", True, white)
@@ -204,7 +220,7 @@ def manage_users():
             # Mouse events for navigation (agora restringido ao menu de confirmação)
             elif event.type == pygame.MOUSEMOTION:
                 mouse_x, mouse_y = pygame.mouse.get_pos()
-
+                
                 if action == "confirm":
                     # Verificar se o mouse está sobre as opções "Sim" ou "Não" de confirmação
                     confirm_rects = [pygame.Rect(width // 2 - 50, height // 2 + 30, 50, 30),
@@ -229,12 +245,24 @@ def manage_users():
                 if event.button == 1:  # Clique do botão esquerdo do mouse
                     mouse_x, mouse_y = pygame.mouse.get_pos()
                     
+                    if back_button_rect.collidepoint(mouse_x, mouse_y):
+                        if action == "confirm":
+                            action = "list"  # Voltar da confirmação para a lista
+                        elif action == "list":
+                            action = "input"  # Voltar da lista para o modo de adicionar utilizadores
+                        else:
+                            return  # Sair do menu de gestão de utilizadores
+                                
                     if action == "input":
-                        # Se o clique ocorrer no campo de digitação, ir para a lista de utilizadores
-                        user_rect = pygame.Rect(width // 2 - 150, height // 2 - 50, 300, 30)  # Área do campo de entrada
+                        # Check if click is inside the input box for adding user
+                        user_rect = pygame.Rect(width // 2 - 150, height // 2 - 50, 300, 30)  # Define the input area
                         if user_rect.collidepoint(mouse_x, mouse_y):
-                            action = "list"  # Ir para a lista de utilizadores ao clicar
-
+                            if user_input:  # If there is some text input
+                                add_user(user_input)  # Add the user
+                                action = "list"  # Switch to the list mode after
+                            elif not user_input:  # If there is no input
+                                action = "list"  # Switch to the list mode after
+                                                
                     elif action == "confirm":
                         # Verificar se o clique está nas opções "Sim" ou "Não" de confirmação
                         confirm_rects = [pygame.Rect(width // 2 - 50, height // 2 + 30, 50, 30),
@@ -472,7 +500,7 @@ def view_scores():
             # Verificando a posição do mouse
             mouse_x, mouse_y = pygame.mouse.get_pos()
             if back_rect.collidepoint(mouse_x, mouse_y):
-                back_surface = font.render(back_text, True, (0, 255, 0))  # Cor verde ao passar o mouse
+                back_surface = font.render(back_text, True, green)  # Cor verde ao passar o mouse
             
             # Exibindo o botão "Voltar"
             screen.blit(back_surface, back_rect)
