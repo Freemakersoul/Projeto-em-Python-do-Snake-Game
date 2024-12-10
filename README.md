@@ -4,7 +4,7 @@
 
 --------------------------------------------------------------------------------------------------
 
-# Jogo do Snake
+# Jogo do Snake / Snake Game
 
 Uma aplicação simples que serve para jogar o jogo Snake, foi desenvolvida com a framework Pygame 
 de Python, que permite adicionar, eliminar e listar os utilizadores e pontuações associadas, 
@@ -53,7 +53,7 @@ utilizadores e as pontuações associadas ao mesmos.
 
 --------------------------------------------------------------------------------------------------
 
-- ## **Limitações**:
+## **Limitações**:
 - Falta de conhecimento em programação  em geral
 - Falta de conhecimento da framework Pygame
 - Tempo limitado para desenvolvimento
@@ -73,13 +73,15 @@ utilizadores e as pontuações associadas ao mesmos.
 
 ### Requisitos Não Funcionais
 
-- **RNF01**: Python 3.12.6
-- **RNF02**: Pygame 2.6.1 (Framework de python virada para jogos)
-- **RNF03**: Biblioteca "json", para manipulação de ficheiros JSON
-- **RNF04**: Biblioteca "random", para gerar posicionamento aleatório da comida
-- **RNF05**: Biblioteca "os", para manipulação de ficheiros
-- **RNF06**: Biblioteca "pygame", para criação de jogos
-- **RNF07**: Biblioteca "sys", para interagir com o sistema operativo e o interpretador de Python
+- **RNF01**: Intalação do Visual Studio Code
+- **RNF02**: Python 3.12.6
+- **RNF03**: Pygame 2.6.1 (Framework de python virada para jogos)
+- **RNF04**: Biblioteca "json", para manipulação de ficheiros JSON
+- **RNF05**: Biblioteca "random", para gerar posicionamento aleatório da comida
+- **RNF06**: Biblioteca "os", para manipulação de ficheiros
+- **RNF07**: Biblioteca "pygame", para criação de jogos
+- **RNF08**: Biblioteca "sys", para interagir com o sistema operativo e o interpretador de Python
+
 
 --------------------------------------------------------------------------------------------------
 
@@ -107,15 +109,29 @@ A arquitetura da aplicação é dividida em duas partes principais:
 
 ### Implementação
 
-- Documentar ficheiros do projeto com os comentários para perceber as funcionalidades
+**Ficheiros**:
+- Ficheiros JSON:
+  - users_and_scores.json: Armazenamento de dados dos utilizadores e pontuações.
+
+- Snake_Game_main.py:
+  - Ficheiro principal da aplicação que contem toda a logica do jogo e funcionalidades.
 
 --------------------------------------------------------------------------------------------------
 
 ## Desempenho do Projeto
 
 ### Testes Realizados
+- Mensagens de depuração para verificar o funcionamento da aplicação.
+- Testes manuais para verificar as funcionalidades da aplicação.
 
-- **Testes funcionais**: Verificação da funcionalidade xpto...
+**Testes funcionais**
+- Verificação das funcionalidades de navegacao entre menus e telas.
+- Verificação das funcionalidades de adicionar, eliminar e listar utilizadores.
+- verificação das funcionalidades de listar utilizadores e pontuações associadas.
+- Verificação das funcionalidades dinâmicas entre teclado e rato.
+- Verificação das funcionalidades de armazenamento e consulta de dados.
+- Veriificação das funcionalidades de jogo (movimento da cobra, colisão com a comida, colisão com a 
+  própria cobra, contabilidade de pontuação, pausar jogo,sair do jogo e game over)
 
 --------------------------------------------------------------------------------------------------
 
@@ -123,14 +139,15 @@ A arquitetura da aplicação é dividida em duas partes principais:
 
 ```bash
 # Clonar o repositório
-git clone https://github.com/nome-do-utilizador/nome-do-projeto.git
+git clone https://github.com/Freemakersoul/Projeto-em-Python-do-Snake-Game
 
 # Navegar até ao diretório do projeto
-cd nome-do-projeto
+cd Projeto_em_Python_do_Snake_Game
 
 # Instalar as dependências (se necessário)
-pip install biblioteca
+# instalação da biblioteca pygame no powershell do vscode
+pip install pygame 
 
 # Executar a applicação
-python main.py
+python/Snake_Game_main.py
 ```
