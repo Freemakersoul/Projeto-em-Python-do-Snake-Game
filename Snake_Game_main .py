@@ -1,8 +1,10 @@
+# Bibliotecas necessarias para a aplicacao do jogo
 import pygame
 import random
 import sys
 import json
 import os
+
 
 
 # PARAMETROS INICIAIS DO JOGO
@@ -22,6 +24,7 @@ white = (255, 255, 255)
 green = (0, 255, 0)
 red = (255, 0, 0)
 aqua = (0, 255, 255)
+brown = (210, 105, 30)
 
 # parametros da cobra
 square_size = 20  # tamanho de cada quadrado
@@ -31,14 +34,14 @@ snake_speed = 15  # velocidade da cobra a cada iteracao do loop
 game_state = "menu"  # Estados possíveis: "menu", "jogo"
 
 
+
 # MANIPULACAO DO FICHEIRO JSON
 JSON_FILE = "users_and_scores.json"
-
-# Create initial JSON file if it doesn't exist
+# criar ficheiro json se nao existir
 if not os.path.exists(JSON_FILE):
     with open(JSON_FILE, "w") as file:
         json.dump({"users": [], "scores": {}}, file, indent=4)
-
+#funcao para carregar os dados do ficheiro json
 def load_data():
     """Carrega os dados do ficheiro JSON."""
     try:
@@ -50,7 +53,7 @@ def load_data():
     except json.JSONDecodeError:
         print(f"Error reading score file: {JSON_FILE}")
         return {"users": [], "scores": {}}
-
+# funcao para guardar os dados no ficheiro json
 def save_data(data):
     """Guarda os dados no ficheiro JSON."""
     try:
@@ -58,6 +61,7 @@ def save_data(data):
             json.dump(data, file, indent=4)
     except Exception as e:
         print(f"Error saving data: {e}")
+
 
 
 # GESTAO DE UTILIZADORES
@@ -70,7 +74,6 @@ def add_user(user_name):
             data["users"].append(user_name)
             data["scores"][user_name] = []  # Initialize empty score list for new user
         save_data(data)
-
 # Função para remover um utilizador
 def remove_user(user_name):
     """Remove um utilizador da lista."""
@@ -82,7 +85,8 @@ def remove_user(user_name):
     save_data(data)
 
 
-# GESTAO DE UTILIZADORES E FUNCOES DO MENU
+
+# GESTAO DE UTILIZADORES E FUNCOES DO MENU "GERIR UTILIZADORES"
 # Função para gerir utilizadores
 def manage_users():
     """Gestão de utilizadores: adicionar ou remover."""
@@ -149,10 +153,10 @@ def manage_users():
         # Opção "Voltar"
         back_button_font = pygame.font.SysFont("Pristina", 28)
         back_button_rect = None
-        back_button_text = back_button_font.render("Voltar", True, red)  # Cor original branca
+        back_button_text = back_button_font.render("Voltar", True, red)  # Cor original
         back_button_rect = pygame.Rect(width // 2 - back_button_text.get_width() // 2, height - 100, back_button_text.get_width(), back_button_text.get_height())
         
-        # Se o mouse passar sobre o botão "Voltar", mudar a cor para verde
+        # Se o rato  passar sobre o botão "Voltar", mudar a cor para verde
         mouse_x, mouse_y = pygame.mouse.get_pos()
         if back_button_rect.collidepoint(mouse_x, mouse_y):
             back_button_text = back_button_font.render("Voltar", True, green) 
@@ -160,10 +164,9 @@ def manage_users():
             back_button_text = back_button_font.render("Voltar", True, red)
             
         screen.blit(back_button_text, back_button_rect)
-        
 
         # Instruções na parte inferior
-        instructions = font.render("Setas: Navegar | Enter: Selecionar ||  ESC: Voltar   || A: Adicionar | Delete: Apagar", True, white)
+        instructions = font.render("Setas: Navegar | Enter: Selecionar | A: Adicionar | Delete: Apagar", True, white)
         screen.blit(instructions, (width // 2 - instructions.get_width() // 2, height - 50))
 
         pygame.display.update()
@@ -293,6 +296,9 @@ def manage_users():
                                 action = "confirm"  # Ir para a confirmação de apagar
                                 confirm_selection = 0  # "Sim" por padrão
 
+
+
+# CARREGAR UTILIZADORES DO FICHEIRO JSON E "MENU DE SELECÇÃO DE UTILIZADOR"
 # Funcao que carrega os utilizadores do ficheiro JSON 
 def load_users_from_json(file_path="users_and_scores.json"):
     """Carrega a lista de utilizadores de um ficheiro JSON."""
@@ -419,7 +425,10 @@ def select_user():
                     else:
                         return users[selected_index]  # Retorna o utilizador selecionado
 
-# GESTAO E APRESENTACAO DE PONTUACOES ASSOCIADAS AOS UTILIZADORES (FICHEIRO JSON)
+
+
+# FUNCAO PARA SALVAR PONTUACOES SEGUIDA DA FUNCAO PARA CARREGAR PONTUACOES 
+# E UTILIZADORES ASSOCIADOS (FICHEIRO JSON), PARA EXIBIR NO MENU "VER PONTUACOES"#
 # Funcao que guarda as pontuacoes
 def save_score(user_name, score):
     """Salva a pontuação do jogador."""
@@ -448,7 +457,7 @@ def save_score(user_name, score):
     except Exception as e:
         print(f"Error saving score: {e}")
 
-# Funcao que mostra o menu com a lista de pontuacoes existentes
+# Funcao que mostra o menu com a lista de pontuacoes existentes ("VER PONTUACOES")
 def view_scores():
     """Exibe as pontuações dos jogadores em uma lista."""
     font = pygame.font.SysFont("Pristina", 30)
@@ -523,7 +532,7 @@ def view_scores():
             return
 
 
-# MENU PRINCIPAL
+# FUNCAO PARA MOSTRAR E GERIR O MENU PRINCIPAL
 # Função para desenhar o menu principal
 def show_menu():
     """Exibe o menu principal com navegação por setas e seleção por teclado ou rato."""
@@ -618,6 +627,9 @@ def show_menu():
                         sys.exit()
     return None  # Should never reach here, but added for completeness
 
+
+# FUNCOES ADICIONAIS DO JOGO (PAUSA, GAME OVER, PONTUACAO, EXIBIR NOME DE JOGADOR, 
+# DESENHAR COBRA, DESENHAR COMIDA, GERADOR DE COMIDA, MOVIMENTO DA COBRA)#
 # Funcao para pausar o jogo
 def pause_game():
     paused = True
@@ -638,8 +650,8 @@ def pause_game():
             elif event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_SPACE:  # Despausar o jogo
                     paused = False
-
-
+                    
+# Funcao para exibir mensagem de Game Over
 def game_over_message(message):
     """Exibe uma mensagem de Game Over e espera interação."""
     font = pygame.font.SysFont("Pristina", 50)
@@ -662,11 +674,11 @@ def game_over_message(message):
                 if event.key == pygame.K_RETURN:
                     return  # Voltar ao menu
 
-
+# Funcao para exibir o nome do jogador
 def display_username(selected_user):
     """Exibe o nome do utilizador no canto superior direito."""
     font = pygame.font.SysFont("Pristina", 30)
-
+    
     # Texto "Jogador:" em branco
     text_player = font.render("Jogador:", True, white)
     # Nome do jogador em verde
@@ -683,40 +695,31 @@ def display_username(selected_user):
     screen.blit(text_player, (player_x, 3))  # "Jogador:" posicionado à direita
     # Nome do usuário posicionado à direita de "Jogador:"
     screen.blit(text_username, (username_x, 3))
+    
 
 # funcao para contabilizar a pontuacao no ecra de jogo
-
-
 def score(pontuacao):
     font = pygame.font.SysFont("Pristina", 30)
     text = font.render("Pontuação: " + str(pontuacao), True, white)
     screen.blit(text, [3, 3])
 
 
-
-# PARAMETROS DA COBRA E DA COMIDA
-# funcao para gerar comida
+# Funcao para gerar comida
 def food_generator():  # gera o quadrado da comida dentro da tela e alinhado com os movimentos da cobra
     food_x = round(random.randrange(0, width - square_size) / 20.0) * 20.0
     food_y = round(random.randrange(0, height - square_size) / 20.0) * 20.0
     return food_x, food_y
 
-# funcao para desenhar a comida
-
-
+# Funcao para desenhar a comida
 def drawing_food(size, food_x, food_y):
-    pygame.draw.rect(screen, red, [food_x, food_y, size, size])
+    pygame.draw.rect(screen, brown, [food_x, food_y, size, size])
 
-# funcao que desenha a cobra
-
-
+# Funcao que desenha a cobra
 def drawing_snake(size, pixels):
     for pixel in pixels:
         pygame.draw.rect(screen, green, [pixel[0], pixel[1], size, size])
 
-# funcao para direcionar a cobra no jogo
-
-
+# Funcao para direcionar a cobra no jogo
 def snake_direction(key):
     snake_speed_x = 0  # Initialize with default values
     snake_speed_y = 0  # Initialize with default values
@@ -736,6 +739,7 @@ def snake_direction(key):
     return snake_speed_x, snake_speed_y
 
 
+
 # CONSTRUCAO DO JOGO / COMPONENTES DO JOGO
 # funcao principal do jogo
 def run_game(selected_user):
@@ -753,6 +757,7 @@ def run_game(selected_user):
     food_x, food_y = food_generator()
     current_score = 0
 
+    # ciclo de jogo
     while not end_game:
         screen.fill(black)
         display_username(selected_user)
@@ -776,7 +781,7 @@ def run_game(selected_user):
         snake_x += snake_speed_x
         snake_y += snake_speed_y
 
-        # Teletransporte
+        # Teletransporte da cobra
         if snake_x < 0:
             snake_x = width - square_size
         elif snake_x >= width:
@@ -786,6 +791,7 @@ def run_game(selected_user):
         elif snake_y >= height:
             snake_y = 0
 
+        # Movimento da cobra
         pixels.append([snake_x, snake_y])
         if len(pixels) > snake_size:
             del pixels[0]
@@ -803,31 +809,32 @@ def run_game(selected_user):
                 save_score(selected_user, final_score)
                 game_over_message("GAME OVER !")
                 return
-
+            
+        # Desenhar elementos na tela
         drawing_food(square_size, food_x, food_y)
         drawing_snake(square_size, pixels)
         score(snake_size - 1)
-
+        
+        # Atualizar a tela
         pygame.display.update()
         clock.tick(snake_speed)
 
-# Initialize game state
+# Initializa o estado do jogo 
 game_state = "menu"
 
-# Main game loop
+# Main game loop, verifica os estados do jogo
 while True:
     if game_state == "menu":
-        action = show_menu()  # Get menu selection
+        action = show_menu()  # obter a ação do menu
         if action == "play":
-            selected_user = select_user()  # Get user selection
-            if selected_user:  # Only start game if user was selected
-                screen.fill(black)
-                run_game(selected_user)  # Run game with selected user
+            selected_user = select_user()  # obter o usuário selecionado
+            if selected_user:  # apenas executa o jogo se o usuário for selecionado
+                run_game(selected_user)  # correr jogo com o usuário selecionado
         elif action == "manage_users":
             manage_users()
         elif action == "quit":
             pygame.quit()
             sys.exit()
-    
-    # Always return to menu after any action
+
+    # voltar sempre ao menu após o jogo
     game_state = "menu"
