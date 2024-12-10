@@ -7,7 +7,7 @@
 # Jogo do Snake / Snake Game
 
 Uma aplicação simples que serve para jogar o jogo Snake, foi desenvolvida com a framework Pygame 
-de Python, que permite adicionar, eliminar e listar os utilizadores e pontuações associadas, 
+de Python, que permite adicionar, eliminar utilizadores e listar os utilizadores e pontuações associadas, 
 permite ainda selecionar o utilizador desejado para jogar.
 
 --------------------------------------------------------------------------------------------------
