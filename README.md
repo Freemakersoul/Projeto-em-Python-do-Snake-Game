@@ -42,22 +42,22 @@ utilizadores e as pontuações associadas ao mesmos.
 
   - Implementar funcionalidades CRUD (Adicionar, Eliminar, Listar, Ler e Escrever)
   - Implementar funcionalidades de navegação entre menus e telas.
-  - Implementar funcionalidades dinamicas entre teclado e rato
-  - Utilizar uma ficheiro JSON para armazenamento e consulta de dados.
+  - Implementar funcionalidades dinâmicas entre teclado e rato
+  - Utilizar um ficheiro JSON para armazenamento e consulta de dados.
 
 
 - **Público-Alvo**: 
 - Jogadores em geral
 - Jogadores de retro games
-- Pessoas nas faixas etarias de 6 anos para cima.
+- Pessoas nas faixas etárias de 6 anos para cima.
 
 --------------------------------------------------------------------------------------------------
 
 ## **Limitações**:
-- Falta de conhecimento em programação  em geral
+- Falta de conhecimento em programação em geral
 - Falta de conhecimento da framework Pygame
 - Tempo limitado para desenvolvimento
-- Falta de conhecimento em manipulacao de ficheiros JSON ou 
+- Falta de conhecimento em manipulação de ficheiros JSON ou 
   base de dados para implementar no projeto
 
 --------------------------------------------------------------------------------------------------
@@ -101,8 +101,9 @@ A arquitetura da aplicação é dividida em duas partes principais:
   - `json`: Para manipulação de ficheiros JSON.
   - `random`: Para gerar posicionamento aleatório da comida.
   - `os`: Para manipulação de ficheiros.
-  - `pygame`: Para criação de jogos.
+  - `pygame (versão - 2.6.1)`: Para criação de jogos.
   - `sys`: Para interagir com o sistema operativo e o interpretador de Python.
+
 - **Ferramentas**:
   - GitHub para controlo de versão.
   - Visual Studio Code como IDE.
@@ -123,15 +124,16 @@ A arquitetura da aplicação é dividida em duas partes principais:
 ### Testes Realizados
 - Mensagens de depuração para verificar o funcionamento da aplicação.
 - Testes manuais para verificar as funcionalidades da aplicação.
+- Correr a aplicação através do terminal.
 
-**Testes funcionais**
-- Verificação das funcionalidades de navegacao entre menus e telas.
+### Testes funcionais
+- Verificação das funcionalidades de navegação entre menus e telas.
 - Verificação das funcionalidades de adicionar, eliminar e listar utilizadores.
 - verificação das funcionalidades de listar utilizadores e pontuações associadas.
 - Verificação das funcionalidades dinâmicas entre teclado e rato.
 - Verificação das funcionalidades de armazenamento e consulta de dados.
-- Veriificação das funcionalidades de jogo (movimento da cobra, colisão com a comida, colisão com a 
-  própria cobra, contabilidade de pontuação, pausar jogo,sair do jogo e game over)
+- Veriificação das funcionalidades de jogo (movimento da cobra, colisão com a comida, colisão com 
+  a própria cobra, contabilidade de pontuação, pausar jogo, sair do jogo e game over)
 
 --------------------------------------------------------------------------------------------------
 
@@ -141,13 +143,45 @@ A arquitetura da aplicação é dividida em duas partes principais:
 # Clonar o repositório
 git clone https://github.com/Freemakersoul/Projeto-em-Python-do-Snake-Game
 
+# Instalar as dependências 
+# Instalação da biblioteca pygame no powershell do vscode
+pip install pygame 
+
 # Navegar até ao diretório do projeto
 cd Projeto_em_Python_do_Snake_Game
 
-# Instalar as dependências (se necessário)
-# instalação da biblioteca pygame no powershell do vscode
-pip install pygame 
-
 # Executar a applicação
-python/Snake_Game_main.py
+python Snake_Game_main.py
 ```
+--------------------------------------------------------------------------------------------------
+
+## Conclusão
+
+### Difilcudades
+Neste projeto, enfrentei algumas dificuldades por ter falta de conhecimento em programação de um 
+modo geral, falta de conhecimento da framework Pygame, que foi a que escolhi para desenvolver o 
+meu projeto e falta de conhecimento em manipulação de ficheiros JSON ou base de dados para 
+implementar no projeto.
+
+Na manipulação de ficheiros tive dificuldades em passar e remover parametros para o ficheiro JSON, 
+pois não sabia bem como o fazer, mas depois de pesquisar e estudar consegui resolver uma parte do 
+problema. Consegui passar e remover utilizadores mas nao conseguia lista-los corretamente, a nivel 
+das pontuacoes associadas aos utilizadores nao consegui resolver, mas com a ajuda do formador 
+todos os problemas foram resolvidos e consegui finalizar o projeto como tinha idealizado.
+
+### Reflexão
+Adorei fazer este projeto, foi uma experiência muito boa e aprendi muito, mesmo com as dificuldades
+que apareceram, e aprendi muito com o formador, que foi muito paciente e sempre disposto a ajudar.
+Ainda assim tenho de continuar a estudar e aprender mais sobre programação para poder compreender e 
+aplicar melhor os conceitos e funcionalidades num projeto. O facto de explorarmos por nós mesmos 
+e criar algo do nosso gosto foi muito gratificante e deu-me mais vontade de continuar a aprender e 
+evoluir cada vez mais.
+
+### Trabalhos Futuros
+Espero em projetos futuros poder aplicar melhor o que aprendi neste projeto e poder trabalhar 
+melhor o código sempre de forma a mante-lo simples, eficiente e o mais legível possível. 
+Espero também evoluir bastante na manipulação de informação de base de dados e/ou ficheiros JSON
+para implementar noutros projetos de aplicações e web sites.
+Pretendo evoluir a todos os níveis e poder aplicar a minha criatividade livremente.
+
+
